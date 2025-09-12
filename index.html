@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Test de Personalidad Eneagrama</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Firebase SDK (Compat) para que funcione con firebase.* en codigo_corregido.js -->
+    <script src="https://www.gstatic.com/firebasejs/12.2.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.2.1/firebase-analytics-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.2.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore-compat.js"></script>
+    <script>
+      // Configuración de Firebase
+      const firebaseConfig = {
+        apiKey: "AIzaSyCLmi5HJGf6315vLanXPr2qBop3nRKGU2A",
+        authDomain: "disceneagram.firebaseapp.com",
+        projectId: "disceneagram",
+        storageBucket: "disceneagram.firebasestorage.app",
+        messagingSenderId: "60369634677",
+        appId: "1:60369634677:web:426accb73d1e29f821bf3c",
+        measurementId: "G-RVGF7HRDF6",
+      };
+
+      // Inicializar Firebase (compat)
+      if (!firebase.apps || !firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+      }
+      // Analytics es opcional en compat
+      if (firebase.analytics) {
+        firebase.analytics();
+      }
+    </script>
+  </head>
+  <body>
+    <div id="eneagram-test-wrapper">
+      <div class="container">
+        <h1>Test de Personalidad Eneagrama</h1>
+        <div
+          id="user-email-display"
+          style="
+            display: none;
+            font-size: 1.05em;
+            color: #1a237e;
+            margin-bottom: 10px;
+          "
+        ></div>
+
+        <div
+          id="start-test-container"
+          style="text-align: center; margin-bottom: 30px"
+        >
+          <form id="email-form" style="margin-bottom: 20px">
+            <label for="user-email"><strong>Email:</strong></label
+            ><br />
+            <input
+              type="email"
+              id="user-email"
+              name="user-email"
+              required
+              placeholder="Ingresa tu email"
+              style="width: 250px; padding: 8px; margin-top: 8px"
+            />
+            <div style="margin-top: 15px; margin-bottom: 5px">
+              <input
+                type="checkbox"
+                id="consentimiento-checkbox"
+                name="consentimiento"
+                style="margin-right: 6px"
+              />
+              <label
+                for="consentimiento-checkbox"
+                style="font-size: 0.98em; color: #555"
+              >
+                Acepto los
+                <a href="#" target="_blank">términos y condiciones</a> y el uso
+                de mis datos para este test.
+              </label>
+            </div>
+            <div
+              style="
+                font-size: 0.98em;
+                color: #555;
+                margin-top: 10px;
+                margin-bottom: 5px;
+              "
+            >
+              <em>
+                Este test es personalizado para ti. Usamos tu correo solo para
+                identificarte y mejorar tu experiencia. No compartimos tus
+                datos.
+              </em>
+            </div>
+          </form>
+          <p class="intro-text">
+            El Eneagrama es un sistema que describe nueve tipos de personalidad
+            distintos y sus interrelaciones. Este test te ayudará a descubrir tu
+            tipo de personalidad predominante según el Eneagrama.
+
+            <strong>Instrucciones:</strong> Responde cada pregunta usando la
+            escala del 1 al 5, siendo: <br />1 - Muy poco de identificado
+            <br />5 - Totalmente de identificado <br />Elige la opción que mejor
+            describa tu respuesta.
+          </p>
+
+          <button id="start-test-btn">Empezar Test</button>
+        </div>
+
+        <div id="alert-message" class="alert" style="display: none"></div>
+
+        <form id="quiz-form" style="display: none">
+          <div id="quiz-container">
+            <!-- Las preguntas de la página actual se generarán aquí -->
+          </div>
+
+          <div id="pagination-controls" style="display: none">
+            <!-- Los botones Anterior/Siguiente se añadirán aquí por JS -->
+          </div>
+
+          <button type="submit" id="submit-btn">Calcular Resultados</button>
+        </form>
+        <div id="loading-spinner" style="display: none; text-align: center">
+          <p>Calculando resultados...</p>
+          <div
+            class="spinner"
+            style="
+              border: 4px solid #ccc;
+              border-top: 4px solid #3498db;
+              border-radius: 50%;
+              width: 30px;
+              height: 30px;
+              animation: spin 1s linear infinite;
+              margin: auto;
+            "
+          ></div>
+        </div>
+        <div id="results-container" style="display: none">
+          <h2>Tus Resultados</h2>
+          <div id="results-text"></div>
+          <div id="results-chart-container">
+            <canvas id="results-chart"></canvas>
+          </div>
+          <div id="type-descriptions" class="type-descriptions">
+            <h3>Descripción de los Tipos</h3>
+            <div class="type-description" id="type-1">
+              <h4>💎 Tipo 1 – El Perfeccionista</h4>
+              <p>
+                Eres una persona íntegra, ética y confiable. Tienes un fuerte
+                deseo de mejorar el mundo y hacerlo más justo. Tu disciplina y
+                sentido del deber te hacen destacar como alguien en quien
+                siempre se puede confiar. Inspiras con tu ejemplo y tu
+                compromiso con lo correcto. ¡Qué orgullo ser alguien que actúa
+                con tanta coherencia!
+              </p>
+            </div>
+            <div class="type-description" id="type-2">
+              <h4>💖 Tipo 2 – El Ayudador</h4>
+              <p>
+                Eres una persona cálida, generosa y profundamente empática.
+                Siempre estás atento a las necesidades de los demás, dispuesto a
+                brindar amor y apoyo sin pedir nada a cambio. Tu capacidad de
+                entrega crea vínculos genuinos y duraderos. Haces que las
+                personas se sientan vistas y valoradas. ¡Qué hermoso es tener un
+                corazón tan grande como el tuyo!
+              </p>
+            </div>
+            <div class="type-description" id="type-3">
+              <h4>🏆 Tipo 3 – El Triunfador</h4>
+              <p>
+                Eres una persona ambiciosa, determinada y llena de energía.
+                Tienes una habilidad natural para alcanzar tus metas y motivar a
+                otros a hacer lo mismo. Te destacas por tu enfoque, tu pasión y
+                tu capacidad de liderar con el ejemplo. Siempre buscas dar lo
+                mejor de ti en todo lo que haces. ¡Ser tú es inspirar éxito con
+                autenticidad!
+              </p>
+            </div>
+            <div class="type-description" id="type-4">
+              <h4>🎨 Tipo 4 – El Individualista</h4>
+              <p>
+                Eres sensible, profundo y auténtico, con una conexión muy
+                especial con tus emociones. Tu forma de ver el mundo es única y
+                artística, llena de belleza y significado. Tienes el don de
+                expresar lo que muchos sienten pero no saben cómo decir. Valoras
+                lo verdadero, lo íntimo y lo esencial. ¡Qué maravilloso es ser
+                tú, tan lleno de alma y creatividad!
+              </p>
+            </div>
+            <div class="type-description" id="type-5">
+              <h4>🔍 Tipo 5 – El Investigador</h4>
+              <p>
+                Eres una mente brillante, curiosa y observadora. Disfrutas
+                descubrir, entender y explorar el mundo desde la profundidad del
+                pensamiento. Encuentras sabiduría en el silencio y valoras tu
+                espacio interior como un tesoro. Tu serenidad intelectual es
+                admirable. ¡Ser tú es ver más allá de lo evidente y enriquecer a
+                los demás con tus ideas!
+              </p>
+            </div>
+            <div class="type-description" id="type-6">
+              <h4>🛡️ Tipo 6 – El Leal</h4>
+              <p>
+                Eres confiable, protector y profundamente comprometido. Siempre
+                estás pensando en cómo cuidar a los tuyos y mantener la
+                estabilidad en tu entorno. Tu sentido del deber y tu fidelidad
+                son pilares para quienes te rodean. Das seguridad con tu
+                presencia y responsabilidad. ¡Ser tú es ser una roca firme en un
+                mundo cambiante!
+              </p>
+            </div>
+            <div class="type-description" id="type-7">
+              <h4>🌈 Tipo 7 – El Entusiasta</h4>
+              <p>
+                Eres alegría pura, creatividad en movimiento y amante de la
+                vida. Siempre estás buscando nuevas experiencias que te hagan
+                sentir libre y feliz. Tu entusiasmo es contagioso y tu energía
+                ilumina cualquier lugar. Sabes cómo transformar lo cotidiano en
+                aventura. ¡Ser tú es un recordatorio de que la vida se hizo para
+                disfrutarla!
+              </p>
+            </div>
+            <div class="type-description" id="type-8">
+              <h4>🔥 Tipo 8 – El Desafiador</h4>
+              <p>
+                Eres fuerte, directo y valiente. Tienes un gran sentido de
+                justicia y no temes enfrentar lo que sea necesario para defender
+                a quienes amas. Lideras con pasión, firmeza y autenticidad. Tu
+                poder interior inspira respeto y seguridad. ¡Ser tú es ser una
+                fuerza que transforma y protege al mismo tiempo!
+              </p>
+            </div>
+            <div class="type-description" id="type-9">
+              <h4>🌿 Tipo 9 – El Pacificador</h4>
+              <p>
+                Eres paz, armonía y equilibrio. Tienes el don de unir personas,
+                calmar tensiones y hacer que todos se sientan bienvenidos. Tu
+                presencia serena transforma los ambientes con solo estar ahí.
+                Escuchas con el corazón y actúas con sabiduría silenciosa. ¡Ser
+                tú es regalar al mundo un respiro de tranquilidad!
+              </p>
+            </div>
+          </div>
+          <div class="restart-container">
+            <button id="restart-test-btn">Reiniciar Test</button>
+          </div>
+        </div>
+
+        <footer>
+          <p>© 2025 Test de Eneagrama - Todos los derechos reservados</p>
+        </footer>
+      </div>
+    </div>
+
+    <script src="codigo_corregido.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  </body>
+</html>
