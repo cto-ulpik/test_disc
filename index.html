@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Test de Personalidad Eneagrama</title>
+    <title>Test DISC de Personalidad</title>
     <link rel="stylesheet" href="styles.css" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Firebase SDK (Compat) para que funcione con firebase.* en codigo_corregido.js -->
@@ -36,7 +36,7 @@
   <body>
     <div id="eneagram-test-wrapper">
       <div class="container">
-        <h1>Test de Personalidad Eneagrama</h1>
+        <h1>Test DISC de Personalidad</h1>
         <div
           id="user-email-display"
           style="
@@ -94,14 +94,13 @@
             </div>
           </form>
           <p class="intro-text">
-            El Eneagrama es un sistema que describe nueve tipos de personalidad
-            distintos y sus interrelaciones. Este test te ayudará a descubrir tu
-            tipo de personalidad predominante según el Eneagrama.
+            El test DISC evalúa tu personalidad en cuatro estilos principales:
+            Dominancia, Influencia, Estabilidad y Cumplimiento. Descubre cuál es
+            tu estilo predominante y cómo puedes potenciar tus fortalezas.
 
             <strong>Instrucciones:</strong> Responde cada pregunta usando la
-            escala del 1 al 5, siendo: <br />1 - Muy poco de identificado
-            <br />5 - Totalmente de identificado <br />Elige la opción que mejor
-            describa tu respuesta.
+            escala del 1 al 5, siendo: <br />1 - Nada identificado <br />5 - Muy
+            identificado <br />Elige la opción que mejor describa tu respuesta.
           </p>
 
           <button id="start-test-btn">Empezar Test</button>
@@ -136,108 +135,46 @@
           ></div>
         </div>
         <div id="results-container" style="display: none">
-          <h2>Tus Resultados</h2>
+          <h2>Tus Resultados DISC</h2>
           <div id="results-text"></div>
           <div id="results-chart-container">
             <canvas id="results-chart"></canvas>
           </div>
           <div id="type-descriptions" class="type-descriptions">
-            <h3>Descripción de los Tipos</h3>
+            <h3>Descripción de los Estilos DISC</h3>
             <div class="type-description" id="type-1">
-              <h4>💎 Tipo 1 – El Perfeccionista</h4>
+              <h4>� Dominancia</h4>
               <p>
-                Eres una persona íntegra, ética y confiable. Tienes un fuerte
-                deseo de mejorar el mundo y hacerlo más justo. Tu disciplina y
-                sentido del deber te hacen destacar como alguien en quien
-                siempre se puede confiar. Inspiras con tu ejemplo y tu
-                compromiso con lo correcto. ¡Qué orgullo ser alguien que actúa
-                con tanta coherencia!
+                Personas directas, decididas, orientadas a resultados y
+                competitivas. Les gusta liderar, tomar decisiones y enfrentar
+                desafíos. Suelen ser francos y buscan lograr metas rápidamente.
               </p>
             </div>
             <div class="type-description" id="type-2">
-              <h4>💖 Tipo 2 – El Ayudador</h4>
+              <h4>� Influencia</h4>
               <p>
-                Eres una persona cálida, generosa y profundamente empática.
-                Siempre estás atento a las necesidades de los demás, dispuesto a
-                brindar amor y apoyo sin pedir nada a cambio. Tu capacidad de
-                entrega crea vínculos genuinos y duraderos. Haces que las
-                personas se sientan vistas y valoradas. ¡Qué hermoso es tener un
-                corazón tan grande como el tuyo!
+                Personas sociables, persuasivas, optimistas y entusiastas.
+                Disfrutan motivar a otros, trabajar en equipo y compartir ideas.
+                Su carisma y energía positiva facilitan la comunicación y el
+                trabajo grupal.
               </p>
             </div>
             <div class="type-description" id="type-3">
-              <h4>🏆 Tipo 3 – El Triunfador</h4>
+              <h4>🌱 Estabilidad</h4>
               <p>
-                Eres una persona ambiciosa, determinada y llena de energía.
-                Tienes una habilidad natural para alcanzar tus metas y motivar a
-                otros a hacer lo mismo. Te destacas por tu enfoque, tu pasión y
-                tu capacidad de liderar con el ejemplo. Siempre buscas dar lo
-                mejor de ti en todo lo que haces. ¡Ser tú es inspirar éxito con
-                autenticidad!
+                Personas calmadas, pacientes, confiables y cooperativas. Valoran
+                la armonía, la rutina y el apoyo mutuo. Prefieren ambientes
+                tranquilos y evitan los conflictos, siendo excelentes compañeros
+                y mediadores.
               </p>
             </div>
             <div class="type-description" id="type-4">
-              <h4>🎨 Tipo 4 – El Individualista</h4>
+              <h4>� Cumplimiento</h4>
               <p>
-                Eres sensible, profundo y auténtico, con una conexión muy
-                especial con tus emociones. Tu forma de ver el mundo es única y
-                artística, llena de belleza y significado. Tienes el don de
-                expresar lo que muchos sienten pero no saben cómo decir. Valoras
-                lo verdadero, lo íntimo y lo esencial. ¡Qué maravilloso es ser
-                tú, tan lleno de alma y creatividad!
-              </p>
-            </div>
-            <div class="type-description" id="type-5">
-              <h4>🔍 Tipo 5 – El Investigador</h4>
-              <p>
-                Eres una mente brillante, curiosa y observadora. Disfrutas
-                descubrir, entender y explorar el mundo desde la profundidad del
-                pensamiento. Encuentras sabiduría en el silencio y valoras tu
-                espacio interior como un tesoro. Tu serenidad intelectual es
-                admirable. ¡Ser tú es ver más allá de lo evidente y enriquecer a
-                los demás con tus ideas!
-              </p>
-            </div>
-            <div class="type-description" id="type-6">
-              <h4>🛡️ Tipo 6 – El Leal</h4>
-              <p>
-                Eres confiable, protector y profundamente comprometido. Siempre
-                estás pensando en cómo cuidar a los tuyos y mantener la
-                estabilidad en tu entorno. Tu sentido del deber y tu fidelidad
-                son pilares para quienes te rodean. Das seguridad con tu
-                presencia y responsabilidad. ¡Ser tú es ser una roca firme en un
-                mundo cambiante!
-              </p>
-            </div>
-            <div class="type-description" id="type-7">
-              <h4>🌈 Tipo 7 – El Entusiasta</h4>
-              <p>
-                Eres alegría pura, creatividad en movimiento y amante de la
-                vida. Siempre estás buscando nuevas experiencias que te hagan
-                sentir libre y feliz. Tu entusiasmo es contagioso y tu energía
-                ilumina cualquier lugar. Sabes cómo transformar lo cotidiano en
-                aventura. ¡Ser tú es un recordatorio de que la vida se hizo para
-                disfrutarla!
-              </p>
-            </div>
-            <div class="type-description" id="type-8">
-              <h4>🔥 Tipo 8 – El Desafiador</h4>
-              <p>
-                Eres fuerte, directo y valiente. Tienes un gran sentido de
-                justicia y no temes enfrentar lo que sea necesario para defender
-                a quienes amas. Lideras con pasión, firmeza y autenticidad. Tu
-                poder interior inspira respeto y seguridad. ¡Ser tú es ser una
-                fuerza que transforma y protege al mismo tiempo!
-              </p>
-            </div>
-            <div class="type-description" id="type-9">
-              <h4>🌿 Tipo 9 – El Pacificador</h4>
-              <p>
-                Eres paz, armonía y equilibrio. Tienes el don de unir personas,
-                calmar tensiones y hacer que todos se sientan bienvenidos. Tu
-                presencia serena transforma los ambientes con solo estar ahí.
-                Escuchas con el corazón y actúas con sabiduría silenciosa. ¡Ser
-                tú es regalar al mundo un respiro de tranquilidad!
+                Personas analíticas, meticulosas, precisas y orientadas a
+                normas. Les gusta seguir reglas, planificar y cuidar los
+                detalles. Buscan la calidad y la exactitud en su trabajo, siendo
+                organizados y responsables.
               </p>
             </div>
           </div>
@@ -247,7 +184,7 @@
         </div>
 
         <footer>
-          <p>© 2025 Test de Eneagrama - Todos los derechos reservados</p>
+          <p>© 2025 Test DISC - Todos los derechos reservados</p>
         </footer>
       </div>
     </div>
