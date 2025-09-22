@@ -48,10 +48,10 @@ async function initializeFirebase() {
     
     firebaseAvailable = false;
     firebaseInitialized = true;
-    paintStatus(
-      `⚠ Error de Firebase: ${e.code || e.message}. Modo offline activado.`,
-      "#e53935"
-    );
+    // paintStatus(
+    //   `⚠ Error de Firebase: ${e.code || e.message}. Modo offline activado.`,
+    //   "#e53935"
+    // );
     return false;
   }
 }
@@ -62,7 +62,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   await initializeFirebase();
   
   if (!firebaseAvailable) {
-    paintStatus("⚠ Modo offline: Los resultados se guardarán localmente", "#f57c00");
+    // paintStatus("⚠ Modo offline: Los resultados se guardarán localmente", "#f57c00");
     return;
   }
 
@@ -98,7 +98,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           // await docRef.delete();
           console.log("Documento de prueba eliminado");
           
-          paintStatus("✔ Conectado a Firestore", "#388e3c");
+          // paintStatus("✔ Conectado a Firestore", "#388e3c");
           console.log("Conexión a Firestore exitosa");
         } catch (error) {
           console.error("Error en prueba de Firestore:", error);
@@ -108,36 +108,36 @@ document.addEventListener("DOMContentLoaded", async () => {
           // Solo marcar como no disponible si es un error crítico
           if (error.code === "unavailable" || error.code === "unauthenticated") {
             firebaseAvailable = false;
-            paintStatus(
-              `⚠ Error crítico de Firestore: ${error.code}. Modo offline activado.`,
-              "#e53935"
-            );
+            // paintStatus(
+            //   `⚠ Error crítico de Firestore: ${error.code}. Modo offline activado.`,
+            //   "#e53935"
+            // );
           } else if (error.code === "permission-denied") {
             // Para errores de permisos, mantener Firebase disponible pero mostrar advertencia
             console.warn("Advertencia: Permisos limitados en Firestore, pero continuando...");
-            paintStatus(
-              "⚠ Advertencia: Permisos limitados en Firestore. Algunas operaciones pueden fallar.",
-              "#f57c00"
-            );
+            // paintStatus(
+            //   "⚠ Advertencia: Permisos limitados en Firestore. Algunas operaciones pueden fallar.",
+            //   "#f57c00"
+            // );
           } else {
             // Para otros errores, mantener Firebase disponible
             console.warn("Error no crítico en Firestore, continuando...");
-            paintStatus(
-              `⚠ Advertencia: ${error.code || error.message}. Continuando con limitaciones.`,
-              "#f57c00"
-            );
+            // paintStatus(
+            //   `⚠ Advertencia: ${error.code || error.message}. Continuando con limitaciones.`,
+            //   "#f57c00"
+            // );
           }
         }
       } else {
         console.log("No hay usuario autenticado");
         firebaseAvailable = false;
-        paintStatus("⚠ No autenticado. Modo offline activado.", "#e53935");
+        // paintStatus("⚠ No autenticado. Modo offline activado.", "#e53935");
       }
     });
   } catch (error) {
     console.error("Error de inicialización de Firebase:", error);
     firebaseAvailable = false;
-    paintStatus("⚠ Error de inicialización de Firebase. Modo offline activado.", "#e53935");
+    // paintStatus("⚠ Error de inicialización de Firebase. Modo offline activado.", "#e53935");
   }
 });
 
