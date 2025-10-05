@@ -523,10 +523,32 @@ body::before {
   overflow: hidden;
 }
 
+/* Estilos específicos para el botón submit como div */
+#eneagram-test-wrapper .submit-button {
+  display: inline-block;
+  margin: 5px;
+  padding: 12px 24px;
+  font-size: 1em;
+  font-weight: 600;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  max-width: 100%;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+  user-select: none;
+}
+
 #eneagram-test-wrapper #submit-btn::before,
 #eneagram-test-wrapper #prev-btn::before,
 #eneagram-test-wrapper #next-btn::before,
-#eneagram-test-wrapper #restart-test-btn::before {
+#eneagram-test-wrapper #restart-test-btn::before,
+#eneagram-test-wrapper .submit-button::before {
   content: '';
   position: absolute;
   top: 0;
@@ -540,7 +562,8 @@ body::before {
 #eneagram-test-wrapper #submit-btn:hover,
 #eneagram-test-wrapper #prev-btn:hover,
 #eneagram-test-wrapper #next-btn:hover,
-#eneagram-test-wrapper #restart-test-btn:hover {
+#eneagram-test-wrapper #restart-test-btn:hover,
+#eneagram-test-wrapper .submit-button:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
 }
@@ -548,7 +571,8 @@ body::before {
 #eneagram-test-wrapper #submit-btn:hover::before,
 #eneagram-test-wrapper #prev-btn:hover::before,
 #eneagram-test-wrapper #next-btn:hover::before,
-#eneagram-test-wrapper #restart-test-btn:hover::before {
+#eneagram-test-wrapper #restart-test-btn:hover::before,
+#eneagram-test-wrapper .submit-button:hover::before {
   left: 100%;
 }
 
@@ -999,15 +1023,22 @@ body::before {
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1) !important;
 }
 
+/* Estilos para botones del modal como divs */
 #modal-cancel-btn:hover {
   background: rgba(102, 126, 234, 0.1) !important;
   border-color: rgba(102, 126, 234, 0.5) !important;
   transform: translateY(-2px);
 }
 
+#modal-complete-btn:hover {
+  background: rgba(25, 130, 196, 0.2) !important;
+  border-color: rgba(25, 130, 196, 0.5) !important;
+  transform: translateY(-2px);
+}
+
 #modal-save-btn:hover {
   transform: translateY(-2px) !important;
-  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4) !important;
+  box-shadow: 0 8px 25px rgba(25, 130, 196, 0.4) !important;
 }
 
 #modal-save-btn::before {

@@ -411,9 +411,9 @@ function mostrarModalEmail() {
       </div>
       
       <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
-        <button id="modal-cancel-btn" style="padding: 14px 28px; border: 2px solid rgba(25, 130, 196, 0.3); background: rgba(255, 255, 255, 0.8); color: #4a5568; border-radius: 12px; cursor: pointer; font-weight: 600; transition: all 0.3s ease; backdrop-filter: blur(5px);">Cancelar</button>
-        <button id="modal-complete-btn" style="padding: 14px 28px; border: 2px solid rgba(25, 130, 196, 0.3); background: rgba(25, 130, 196, 0.1); color: #1982C4; border-radius: 12px; cursor: pointer; font-weight: 600; transition: all 0.3s ease; display: none;">Completar Preguntas</button>
-        <button id="modal-save-btn" style="padding: 14px 28px; border: none; background: linear-gradient(135deg, #1982C4 0%, #FF595E 100%); color: white; border-radius: 12px; cursor: pointer; font-weight: 600; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(25, 130, 196, 0.3); position: relative; overflow: hidden;">Ver resultados</button>
+        <div id="modal-cancel-btn" style="padding: 14px 28px; border: 2px solid rgba(25, 130, 196, 0.3); background: rgba(255, 255, 255, 0.8); color: #4a5568; border-radius: 12px; cursor: pointer; font-weight: 600; transition: all 0.3s ease; backdrop-filter: blur(5px); text-align: center; user-select: none;">Cancelar</div>
+        <div id="modal-complete-btn" style="padding: 14px 28px; border: 2px solid rgba(25, 130, 196, 0.3); background: rgba(25, 130, 196, 0.1); color: #1982C4; border-radius: 12px; cursor: pointer; font-weight: 600; transition: all 0.3s ease; display: none; text-align: center; user-select: none;">Completar Preguntas</div>
+        <div id="modal-save-btn" style="padding: 14px 28px; border: none; background: linear-gradient(135deg, #1982C4 0%, #FF595E 100%); color: white; border-radius: 12px; cursor: pointer; font-weight: 600; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(25, 130, 196, 0.3); position: relative; overflow: hidden; text-align: center; user-select: none;">Ver resultados</div>
       </div>
       <div id="modal-error" style="color: #e53e3e; margin-top: 15px; display: none; font-size: 0.9em; background: rgba(229, 62, 62, 0.1); padding: 12px; border-radius: 8px; border: 1px solid rgba(229, 62, 62, 0.2);"></div>
     `;
@@ -477,14 +477,7 @@ function mostrarModalEmail() {
       // Prueba simple de Toastify
       if (typeof Toastify !== 'undefined') {
         console.log('Toastify está disponible, mostrando notificación de prueba');
-        Toastify({
-          text: "🎉 Toastify está funcionando correctamente",
-          duration: 3000,
-          gravity: "top",
-          position: "center",
-          backgroundColor: "linear-gradient(to right, #00b09b, #96c93d)",
-          className: "toastify-success"
-        }).showToast();
+       
         // Continuar con la lógica normal después de mostrar la prueba
       } else {
         console.error('Toastify no está disponible');
@@ -1274,9 +1267,9 @@ window.diagnosticarFirebase = diagnosticarFirebase;
 window.forzarGuardadoRespuestas = forzarGuardadoRespuestas;
 window.forzarCreacionDocumento = forzarCreacionDocumento;
 
-// Enviar formulario - ahora solicita email antes de guardar
-if (quizForm) {
-  quizForm.addEventListener("submit", async (event) => {
+// Manejar click del botón submit - ahora como div normal
+if (submitBtn) {
+  submitBtn.addEventListener("click", async (event) => {
     event.preventDefault();
     if (!areAllQuestionsAnswered()) {
       showAlert("Aún faltan preguntas por responder. Por favor, completa todas.");
@@ -1330,7 +1323,7 @@ if (quizForm) {
     }
   });
 } else {
-  console.error("Elemento quizForm no encontrado.");
+  console.error("Elemento submitBtn no encontrado.");
 }
 
 // Devuelve la descripción del tipo (puedes personalizar)
