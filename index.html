@@ -6,6 +6,9 @@
     <title>Test DISC de Personalidad</title>
     <link rel="stylesheet" href="styles.css" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Toastify para notificaciones modernas -->
+    <script src="https://cdn.jsdelivr.net/npm/toastify-js@1.12.0/src/toastify.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js@1.12.0/src/toastify.min.css">
     <!-- Firebase SDK (Compat) para que funcione con firebase.* en codigo_corregido.js -->
     <script src="https://www.gstatic.com/firebasejs/12.2.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/12.2.1/firebase-analytics-compat.js"></script>
@@ -47,72 +50,57 @@
           "
         ></div>
 
-        <div
-          id="start-test-container"
-          style="text-align: center; margin-bottom: 30px"
-        >
-          <form id="email-form" style="margin-bottom: 20px">
-            <label for="user-email"><strong>Email:</strong></label
-            ><br />
-            <input
-              type="email"
-              id="user-email"
-              name="user-email"
-              required
-              placeholder="Ingresa tu email"
-              style="width: 250px; padding: 8px; margin-top: 8px"
-            />
-            <div style="margin-bottom: 8px">
-              <input type="checkbox" id="consentimiento-checkbox" required />
-              <label
-                for="consentimiento-checkbox"
-                style="font-size: 0.98em; color: #555"
-              >
-                Acepto los
-                <a
-                  href="https://ulpik.com/wp-content/uploads/2025/09/Ulpik-Terminos-y-Condiciones-2025.-1.pdf"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  >términos y condiciones</a
-                >
-                y el uso de mis datos para este test.
-              </label>
+        <div id="start-test-container" class="start-container">
+          <!-- Icono DISC -->
+          <div class="disc-icon-container">
+            <div class="disc-icon">
+              <div class="disc-circle disc-d">D</div>
+              <div class="disc-circle disc-i">I</div>
+              <div class="disc-circle disc-s">S</div>
+              <div class="disc-circle disc-c">C</div>
             </div>
-            <div>
-              <input type="checkbox" id="promociones-checkbox" />
-              <label
-                for="promociones-checkbox"
-                style="font-size: 0.98em; color: #555"
-              >
-                Al hacer clic, autorizo recibir correos y promociones.
-              </label>
-            </div>
-            <div
-              style="
-                font-size: 0.98em;
-                color: #555;
-                margin-top: 10px;
-                margin-bottom: 5px;
-              "
-            >
-              <em>
-                Este test es personalizado para ti. Usamos tu correo solo para
-                identificarte y mejorar tu experiencia. No compartimos tus
-                datos.
-              </em>
-            </div>
-          </form>
-          <p class="intro-text">
-            El test DISC evalúa tu personalidad en cuatro estilos principales:
-            Dominancia, Influencia, Estabilidad y Cumplimiento. Descubre cuál es
-            tu estilo predominante y cómo puedes potenciar tus fortalezas.
+          </div>
 
-            <strong>Instrucciones:</strong> Responde cada pregunta usando la
-            escala del 1 al 5, siendo: <br />1 - Nada identificado <br />5 - Muy
-            identificado <br />Elige la opción que mejor describa tu respuesta.
-          </p>
+          <!-- Descripción principal -->
+          <div class="main-description">
+            <h2 class="description-title">Descubre tu estilo de personalidad</h2>
+            <p class="description-text">
+              El test DISC evalúa tu personalidad en cuatro estilos principales:
+              <span class="highlight">Dominancia</span>, <span class="highlight">Influencia</span>, 
+              <span class="highlight">Estabilidad</span> y <span class="highlight">Cumplimiento</span>.
+            </p>
+            <p class="description-subtitle">
+              Descubre cuál es tu estilo predominante y cómo puedes potenciar tus fortalezas.
+            </p>
+          </div>
 
-          <button id="start-test-btn">Empezar Test</button>
+          <!-- Instrucciones -->
+          <div class="instructions-container">
+            <h3 class="instructions-title">Instrucciones</h3>
+            <div class="instructions-content">
+              <p>Responde cada pregunta usando la escala del 1 al 5:</p>
+              <div class="scale-example">
+                <div class="scale-item">
+                  <span class="scale-number">1</span>
+                  <span class="scale-label">Nada identificado</span>
+                </div>
+                <div class="scale-arrow">→</div>
+                <div class="scale-item">
+                  <span class="scale-number">5</span>
+                  <span class="scale-label">Muy identificado</span>
+                </div>
+              </div>
+              <p class="instructions-note">Elige la opción que mejor describa tu respuesta.</p>
+            </div>
+          </div>
+
+          <!-- Botón de inicio -->
+          <div class="start-button-container">
+            <button id="start-test-btn" class="start-button">
+              <span class="button-text">Empezar Test</span>
+              <span class="button-icon">🚀</span>
+            </button>
+          </div>
         </div>
 
         <div id="alert-message" class="alert" style="display: none"></div>

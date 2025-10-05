@@ -9,6 +9,14 @@ let userResponses = [];
 let currentPage = 1;
 const questionsPerPage = 20;
 
+// Prueba de Toastify
+console.log('Toastify disponible:', typeof Toastify !== 'undefined');
+if (typeof Toastify !== 'undefined') {
+  console.log('Toastify cargado correctamente');
+} else {
+  console.error('Toastify no está disponible');
+}
+
 // Utilidad para mostrar estado arriba del wrapper
 function paintStatus(msg, color) {
   const wrapper = document.getElementById("eneagram-test-wrapper");
@@ -321,37 +329,280 @@ function guardarResultadoLocal(email, resultado, respuestas) {
   }
 }
 
-// Mejoras UI/UX para el campo de email (después de inicializar todas las variables DOM)
-setTimeout(() => {
-  const emailInput = document.getElementById("user-email");
-  const emailForm = document.getElementById("email-form");
-  let emailValido = false;
-  if (emailInput && startTestBtn) {
-    startTestBtn.disabled = true;
-    emailInput.addEventListener("input", function () {
-      const valor = emailInput.value.trim();
-      const esValido = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(valor);
-      emailValido = esValido;
-      if (esValido) {
-        emailInput.style.borderColor = "#2ecc40";
-        startTestBtn.disabled = false;
-        hideAlert();
+// Función para mostrar modal de email al final del test
+function mostrarModalEmail() {
+  return new Promise((resolve) => {
+    // Crear modal
+    const modal = document.createElement('div');
+    modal.id = 'email-modal';
+    modal.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.8) 0%, rgba(118, 75, 162, 0.8) 100%);
+      backdrop-filter: blur(10px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 10000;
+      animation: modalFadeIn 0.3s ease-out;
+    `;
+
+    // Crear contenido del modal
+    const modalContent = document.createElement('div');
+    modalContent.style.cssText = `
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.95) 100%);
+      backdrop-filter: blur(20px);
+      padding: 40px;
+      border-radius: 24px;
+      box-shadow: 
+        0 20px 40px rgba(0, 0, 0, 0.2),
+        0 0 0 1px rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      max-width: 450px;
+      width: 90%;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      animation: modalSlideIn 0.4s ease-out;
+    `;
+
+    modalContent.innerHTML = `
+      <div style="position: absolute; top: 0; left: 0; right: 0; height: 6px; background: linear-gradient(90deg, #1982C4 0%, #FF595E 100%); border-radius: 24px 24px 0 0;"></div>
+      
+      <div style="margin-bottom: 30px;">
+        <h3 style="margin-top: 0; background: linear-gradient(135deg, #1982C4 0%, #FF595E 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; font-size: 1.8em; font-weight: 700; margin-bottom: 10px;">¡Casi terminamos!</h3>
+        <p style="color: #4a5568; margin-bottom: 0; font-size: 1.1em;">Para ver tus resultados, necesitamos tu email y que aceptes los términos:</p>
+      </div>
+      
+      <div style="margin-bottom: 25px;">
+        <input type="email" id="modal-email-input" placeholder="tu@email.com" 
+               style="width: 100%; padding: 16px 20px; border: 2px solid rgba(25, 130, 196, 0.2); border-radius: 12px; font-size: 1em; margin-bottom: 0; box-sizing: border-box; background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(5px); transition: all 0.3s ease; outline: none;">
+      </div>
+      
+      <div style="text-align: left; margin-bottom: 25px; background: linear-gradient(135deg, rgba(25, 130, 196, 0.05) 0%, rgba(255, 89, 94, 0.05) 100%); border-radius: 16px; padding: 20px; border: 1px solid rgba(25, 130, 196, 0.1);">
+        <div style="margin-bottom: 15px;">
+          <label for="modal-consentimiento-checkbox" style="display: flex; align-items: flex-start; gap: 12px; font-size: 0.95em; color: #4a5568; cursor: pointer; line-height: 1.5;">
+            <input type="checkbox" id="modal-consentimiento-checkbox" required 
+                   style="margin: 0; width: 18px; height: 18px; accent-color: #1982C4; flex-shrink: 0; margin-top: 2px;">
+            <span>
+              Acepto los
+              <a href="https://ulpik.com/wp-content/uploads/2025/09/Ulpik-Terminos-y-Condiciones-2025.-1.pdf" 
+                 target="_blank" rel="noopener noreferrer" style="color: #1982C4; text-decoration: underline; font-weight: 600;">
+                términos y condiciones
+              </a>
+              y el uso de mis datos para este test.
+            </span>
+          </label>
+        </div>
+        <div>
+          <label for="modal-promociones-checkbox" style="display: flex; align-items: flex-start; gap: 12px; font-size: 0.95em; color: #4a5568; cursor: pointer; line-height: 1.5;">
+            <input type="checkbox" id="modal-promociones-checkbox" required
+                   style="margin: 0; width: 18px; height: 18px; accent-color: #1982C4; flex-shrink: 0; margin-top: 2px;">
+            <span>Al hacer clic, autorizo recibir correos y promociones.</span>
+          </label>
+        </div>
+      </div>
+      
+      <div style="font-size: 0.9em; color: #718096; margin-bottom: 25px; font-style: italic; background: rgba(25, 130, 196, 0.05); padding: 15px; border-radius: 12px; border: 1px solid rgba(25, 130, 196, 0.1);">
+        Este test es personalizado para ti. Usamos tu correo solo para identificarte y mejorar tu experiencia. No compartimos tus datos.
+      </div>
+      
+      <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+        <button id="modal-cancel-btn" style="padding: 14px 28px; border: 2px solid rgba(25, 130, 196, 0.3); background: rgba(255, 255, 255, 0.8); color: #4a5568; border-radius: 12px; cursor: pointer; font-weight: 600; transition: all 0.3s ease; backdrop-filter: blur(5px);">Cancelar</button>
+        <button id="modal-complete-btn" style="padding: 14px 28px; border: 2px solid rgba(25, 130, 196, 0.3); background: rgba(25, 130, 196, 0.1); color: #1982C4; border-radius: 12px; cursor: pointer; font-weight: 600; transition: all 0.3s ease; display: none;">Completar Preguntas</button>
+        <button id="modal-save-btn" style="padding: 14px 28px; border: none; background: linear-gradient(135deg, #1982C4 0%, #FF595E 100%); color: white; border-radius: 12px; cursor: pointer; font-weight: 600; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(25, 130, 196, 0.3); position: relative; overflow: hidden;">Ver resultados</button>
+      </div>
+      <div id="modal-error" style="color: #e53e3e; margin-top: 15px; display: none; font-size: 0.9em; background: rgba(229, 62, 62, 0.1); padding: 12px; border-radius: 8px; border: 1px solid rgba(229, 62, 62, 0.2);"></div>
+    `;
+
+    modal.appendChild(modalContent);
+    document.body.appendChild(modal);
+
+    const emailInput = modal.querySelector('#modal-email-input');
+    const saveBtn = modal.querySelector('#modal-save-btn');
+    const cancelBtn = modal.querySelector('#modal-cancel-btn');
+    const completeBtn = modal.querySelector('#modal-complete-btn');
+    const errorDiv = modal.querySelector('#modal-error');
+    const consentimientoCheckbox = modal.querySelector('#modal-consentimiento-checkbox');
+    const promocionesCheckbox = modal.querySelector('#modal-promociones-checkbox');
+
+    // Función para validar el formulario completo
+    function validateForm() {
+      const email = emailInput.value.trim();
+      const emailValid = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email);
+      const consentimientoValid = consentimientoCheckbox.checked;
+      const promocionesValid = promocionesCheckbox.checked;
+      
+      // Verificar si hay preguntas sin responder
+      const preguntasSinResponder = userResponses.filter(response => response === null).length;
+      const todasRespondidas = preguntasSinResponder === 0;
+      
+      // Mostrar/ocultar botón "Completar Preguntas"
+      if (!todasRespondidas) {
+        completeBtn.style.display = 'inline-block';
+        saveBtn.style.display = 'none';
       } else {
-        emailInput.style.borderColor = valor.length > 0 ? "#e74c3c" : "#ccc";
-        startTestBtn.disabled = true;
+        completeBtn.style.display = 'none';
+        saveBtn.style.display = 'inline-block';
       }
-    });
-    startTestBtn.addEventListener("click", function (e) {
-      if (!emailValido) {
-        e.preventDefault();
-        showAlert("Por favor ingresa un email válido para comenzar.");
-        emailInput.focus();
+      
+      // Validar que todos los campos estén completos
+      const todoValido = emailValid && consentimientoValid && promocionesValid && todasRespondidas;
+      
+      if (todoValido) {
+        emailInput.style.borderColor = '#2ecc40';
+        saveBtn.disabled = false;
+        errorDiv.style.display = 'none';
+      } else {
+        emailInput.style.borderColor = email.length > 0 && !emailValid ? '#e74c3c' : '#ddd';
+        saveBtn.disabled = true;
+        errorDiv.style.display = 'none'; // Ocultar mensajes de error en validación en tiempo real
+      }
+    }
+
+    // Validación de email en tiempo real
+    emailInput.addEventListener('input', validateForm);
+    
+    // Validación de checkboxes
+    consentimientoCheckbox.addEventListener('change', validateForm);
+    promocionesCheckbox.addEventListener('change', validateForm);
+
+    // Event listeners
+    saveBtn.addEventListener('click', function() {
+      console.log('Botón Ver resultados presionado'); // Debug
+      
+      // Prueba simple de Toastify
+      if (typeof Toastify !== 'undefined') {
+        console.log('Toastify está disponible, mostrando notificación de prueba');
+        Toastify({
+          text: "🎉 Toastify está funcionando correctamente",
+          duration: 3000,
+          gravity: "top",
+          position: "center",
+          backgroundColor: "linear-gradient(to right, #00b09b, #96c93d)",
+          className: "toastify-success"
+        }).showToast();
+        // Continuar con la lógica normal después de mostrar la prueba
+      } else {
+        console.error('Toastify no está disponible');
+        alert('Toastify no está disponible');
         return;
       }
-      hideAlert();
+      
+      const email = emailInput.value.trim();
+      const emailValid = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email);
+      const consentimientoValid = consentimientoCheckbox.checked;
+      const promocionesValid = promocionesCheckbox.checked;
+      
+      // Validar que todas las preguntas estén respondidas
+      const preguntasSinResponder = [];
+      for (let i = 0; i < userResponses.length; i++) {
+        if (userResponses[i] === null) {
+          const preguntaNum = i + 1;
+          const pagina = Math.ceil(preguntaNum / questionsPerPage);
+          preguntasSinResponder.push({ numero: preguntaNum, pagina: pagina });
+        }
+      }
+      
+      if (preguntasSinResponder.length > 0) {
+        const preguntasLista = preguntasSinResponder.slice(0, 5).map(p => `• Pregunta ${p.numero} (Página ${p.pagina})`).join('\n');
+        const mensajeAdicional = preguntasSinResponder.length > 5 ? `\n• Y ${preguntasSinResponder.length - 5} preguntas más...` : '';
+        
+        console.log('Mostrando notificación de preguntas faltantes'); // Debug
+        Toastify({
+          text: `❓ Faltan ${preguntasSinResponder.length} pregunta${preguntasSinResponder.length > 1 ? 's' : ''} por responder. Debes completar todas antes de ver los resultados.`,
+          duration: 5000,
+          gravity: "top",
+          position: "center",
+          backgroundColor: "linear-gradient(to right, #f59e0b, #fbbf24)",
+          className: "toastify-warning",
+          style: {
+            fontSize: "16px",
+            fontWeight: "600",
+            borderRadius: "12px",
+            boxShadow: "0 4px 15px rgba(245, 158, 11, 0.3)"
+          }
+        }).showToast();
+        return;
+      }
+      
+      if (!emailValid) {
+        console.log('Mostrando notificación de email inválido'); // Debug
+        Toastify({
+          text: "📧 Por favor ingresa un email válido. Ejemplos: usuario@email.com, nombre.apellido@empresa.com",
+          duration: 5000,
+          gravity: "top",
+          position: "center",
+          backgroundColor: "linear-gradient(to right, #f59e0b, #fbbf24)",
+          className: "toastify-warning",
+          style: {
+            fontSize: "16px",
+            fontWeight: "600",
+            borderRadius: "12px",
+            boxShadow: "0 4px 15px rgba(245, 158, 11, 0.3)"
+          }
+        }).showToast();
+        return;
+      }
+      
+      if (!consentimientoValid || !promocionesValid) {
+        const faltantes = [];
+        if (!consentimientoValid) faltantes.push('• Términos y condiciones');
+        if (!promocionesValid) faltantes.push('• Autorización de correos');
+        
+        console.log('Mostrando notificación de checkboxes faltantes'); // Debug
+        const faltantesTexto = faltantes.join(', ');
+        Toastify({
+          text: `📋 Antes de ver tus resultados, debes aceptar: ${faltantesTexto}. Sin esto no podrás ver tus resultados.`,
+          duration: 5000,
+          gravity: "top",
+          position: "center",
+          backgroundColor: "linear-gradient(to right, #f59e0b, #fbbf24)",
+          className: "toastify-warning",
+          style: {
+            fontSize: "16px",
+            fontWeight: "600",
+            borderRadius: "12px",
+            boxShadow: "0 4px 15px rgba(245, 158, 11, 0.3)"
+          }
+        }).showToast();
+        return;
+      }
+      
+      // Si todo está válido, proceder
+      document.body.removeChild(modal);
+      resolve(email);
     });
-  }
-}, 0);
+
+    cancelBtn.addEventListener('click', function() {
+      document.body.removeChild(modal);
+      resolve(null);
+    });
+
+    completeBtn.addEventListener('click', function() {
+      // Cerrar el modal y volver a las preguntas
+      document.body.removeChild(modal);
+      resolve('complete');
+    });
+
+    // Cerrar con ESC
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        document.body.removeChild(modal);
+        resolve(null);
+      }
+    });
+
+    // Validación inicial
+    validateForm();
+    
+    // Focus en el input
+    setTimeout(() => emailInput.focus(), 100);
+  });
+}
 
 // Seleccionar elementos DENTRO del wrapper para evitar conflictos
 const wrapper = document.getElementById("eneagram-test-wrapper");
@@ -522,13 +773,7 @@ function createPaginationButtons() {
       return;
     }
 
-    // Guardar/actualizar respuestas parciales en Firestore
-    console.log("Guardando respuestas al cambiar de página...");
-    try {
-      await actualizarRespuestasFirestore();
-    } catch (error) {
-      console.error("Error guardando respuestas en cambio de página:", error);
-    }
+    // Ya no guardamos respuestas al cambiar de página - solo al final
 
     const totalPages = Math.ceil(shuffledQuestions.length / questionsPerPage);
     if (currentPage < totalPages) {
@@ -964,28 +1209,13 @@ if (restartTestBtn) {
   console.warn("Botón #restart-test-btn no encontrado.");
 }
 
-// Evento para iniciar test
+// Evento para iniciar test - ahora sin validación de email
 if (startTestBtn) {
   startTestBtn.addEventListener("click", async function () {
-    const emailInput = document.getElementById("user-email");
-    const emailDisplay = document.getElementById("user-email-display");
-    if (emailInput && emailDisplay) {
-      emailDisplay.textContent = `Usuario: ${emailInput.value}`;
-      emailDisplay.style.display = "block";
-    }
-    
     // Ejecutar diagnóstico
     diagnosticarFirebase();
     
-    // Crear documento en Firestore al iniciar el test
-    try {
-      await crearDocumentoFirestore(emailInput.value);
-      console.log("Documento creado exitosamente");
-    } catch (error) {
-      console.error("Error creando documento:", error);
-      // Continuar con el test aunque falle Firebase
-    }
-    
+    // Inicializar el quiz directamente sin crear documento en Firestore
     initializeQuiz();
   });
 } else {
@@ -1044,7 +1274,7 @@ window.diagnosticarFirebase = diagnosticarFirebase;
 window.forzarGuardadoRespuestas = forzarGuardadoRespuestas;
 window.forzarCreacionDocumento = forzarCreacionDocumento;
 
-// Enviar formulario
+// Enviar formulario - ahora solicita email antes de guardar
 if (quizForm) {
   quizForm.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -1052,11 +1282,21 @@ if (quizForm) {
       showAlert("Aún faltan preguntas por responder. Por favor, completa todas.");
       return;
     }
+    
     const scores = calculateScores();
     if (scores) {
-      // Obtener email del usuario
-      const emailInput = document.getElementById("user-email");
-      const email = emailInput ? emailInput.value : "usuario@ejemplo.com";
+      // Solicitar email al usuario antes de guardar
+      const email = await mostrarModalEmail();
+      
+      if (!email) {
+        // Usuario canceló, no hacer nada (quedarse en el test)
+        return;
+      }
+      
+      if (email === 'complete') {
+        // Usuario quiere completar preguntas, no hacer nada (quedarse en el test)
+        return;
+      }
       
       // Modelo resultado: { tipo, puntaje, descripcion }
       const maxScore = Math.max(...scores);
@@ -1075,8 +1315,9 @@ if (quizForm) {
         }
       });
       
-      // Intentar guardar en Firebase, si falla usar respaldo local
+      // Crear documento en Firestore con el email proporcionado
       try {
+        await crearDocumentoFirestore(email);
         await actualizarRespuestasFirestore();
         await actualizarResultadoFirestore(resultado);
         console.log("Resultado guardado en Firebase");
