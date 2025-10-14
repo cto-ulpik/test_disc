@@ -134,28 +134,37 @@ body::before {
 }
 
 .description-title {
-  font-size: 2.2em;
-  font-weight: 600;
+  font-size: 2.4em;
+  font-weight: 700;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   background: linear-gradient(135deg, #1982C4 0%, #FF595E 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  margin-bottom: 25px;
-  line-height: 1.2;
+  margin-bottom: 30px;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
 }
 
 .description-text {
-  font-size: 1.2em;
-  color: #4a5568;
-  margin-bottom: 20px;
-  line-height: 1.6;
+  font-size: 1.3em;
+  font-weight: 500;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  color: #2d3748;
+  margin-bottom: 25px;
+  line-height: 1.7;
+  letter-spacing: 0.01em;
 }
 
 .description-subtitle {
-  font-size: 1.1em;
-  color: #718096;
+  font-size: 1.15em;
+  font-weight: 400;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  color: #4a5568;
   font-style: italic;
   margin-bottom: 0;
+  line-height: 1.6;
+  letter-spacing: 0.005em;
 }
 
 .highlight {
@@ -176,6 +185,61 @@ body::before {
   opacity: 0.3;
 }
 
+/* DISC Type Colors */
+.disc-dominancia {
+  color: #FF595E !important;
+  font-weight: 700;
+  position: relative;
+}
+
+.disc-influencia {
+  color: #FFCA3A !important;
+  font-weight: 700;
+  position: relative;
+}
+
+.disc-estabilidad {
+  color: #8AC926 !important;
+  font-weight: 700;
+  position: relative;
+}
+
+.disc-cumplimiento {
+  color: #1982C4 !important;
+  font-weight: 700;
+  position: relative;
+}
+
+.disc-dominancia::after,
+.disc-influencia::after,
+.disc-estabilidad::after,
+.disc-cumplimiento::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 3px;
+  border-radius: 2px;
+  opacity: 0.4;
+}
+
+.disc-dominancia::after {
+  background: #FF595E;
+}
+
+.disc-influencia::after {
+  background: #FFCA3A;
+}
+
+.disc-estabilidad::after {
+  background: #8AC926;
+}
+
+.disc-cumplimiento::after {
+  background: #1982C4;
+}
+
 /* Instrucciones */
 .instructions-container {
   background: linear-gradient(135deg, rgba(25, 130, 196, 0.05) 0%, rgba(255, 89, 94, 0.05) 100%);
@@ -189,17 +253,22 @@ body::before {
 }
 
 .instructions-title {
-  font-size: 1.5em;
-  font-weight: 600;
-  color: #4a5568;
-  margin-bottom: 20px;
+  font-size: 1.6em;
+  font-weight: 700;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  color: #2d3748;
+  margin-bottom: 25px;
   text-align: center;
+  letter-spacing: -0.01em;
 }
 
 .instructions-content p {
-  font-size: 1.1em;
-  color: #4a5568;
-  margin-bottom: 20px;
+  font-size: 1.2em;
+  font-weight: 500;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  color: #2d3748;
+  margin-bottom: 25px;
+  line-height: 1.6;
 }
 
 .scale-example {
@@ -233,10 +302,13 @@ body::before {
 }
 
 .scale-label {
-  font-size: 0.9em;
-  color: #718096;
+  font-size: 1em;
+  font-weight: 600;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  color: #4a5568;
   text-align: center;
   max-width: 100px;
+  letter-spacing: 0.01em;
 }
 
 .scale-arrow {
@@ -246,11 +318,14 @@ body::before {
 }
 
 .instructions-note {
-  font-size: 1em;
-  color: #718096;
+  font-size: 1.1em;
+  font-weight: 400;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  color: #4a5568;
   font-style: italic;
   text-align: center;
-  margin-top: 20px;
+  margin-top: 25px;
+  line-height: 1.5;
 }
 
 /* Botón de inicio */
@@ -259,7 +334,7 @@ body::before {
 }
 
 .start-button {
-  background: linear-gradient(135deg, #1982C4 0%, #FF595E 100%);
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
   color: white;
   border: none;
   padding: 18px 40px;
@@ -268,7 +343,7 @@ body::before {
   border-radius: 50px;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 8px 25px rgba(25, 130, 196, 0.3);
+  box-shadow: 0 8px 25px rgba(40, 167, 69, 0.3);
   display: inline-flex;
   align-items: center;
   gap: 12px;
@@ -293,7 +368,7 @@ body::before {
 
 .start-button:hover {
   transform: translateY(-3px);
-  box-shadow: 0 12px 35px rgba(25, 130, 196, 0.4);
+  box-shadow: 0 12px 35px rgba(40, 167, 69, 0.4);
 }
 
 .start-button:active {
@@ -602,16 +677,19 @@ body::before {
 #eneagram-test-wrapper #start-test-btn {
   padding: 15px 30px;
   font-size: 1.2em;
-  background-color: #28a745;
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
   color: white;
   border: none;
   border-radius: 5px;
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
 }
 
 #eneagram-test-wrapper #start-test-btn:hover {
-  background-color: #218838;
+  background: linear-gradient(135deg, #218838 0%, #1ea085 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(40, 167, 69, 0.4);
 }
 
 /* Resultados */
@@ -795,6 +873,134 @@ body::before {
   letter-spacing: -0.01em;
 }
 
+/* Sección de WhatsApp */
+.whatsapp-contact-section {
+  margin: 40px 0;
+  padding: 30px;
+  background: linear-gradient(135deg, rgba(37, 211, 102, 0.05) 0%, rgba(25, 130, 196, 0.05) 100%);
+  border-radius: 20px;
+  border: 1px solid rgba(37, 211, 102, 0.1);
+  text-align: center;
+}
+
+.whatsapp-title {
+  font-size: 1.4em;
+  font-weight: 600;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  color: #2d3748;
+  margin-bottom: 25px;
+  line-height: 1.4;
+}
+
+.whatsapp-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.phone-input-container {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.country-code {
+  padding: 12px 15px;
+  border: 2px solid rgba(37, 211, 102, 0.2);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.9);
+  font-size: 1em;
+  font-weight: 500;
+  color: #2d3748;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 120px;
+}
+
+.country-code:focus {
+  outline: none;
+  border-color: #25d366;
+  box-shadow: 0 0 0 3px rgba(37, 211, 102, 0.1);
+}
+
+.phone-input {
+  flex: 1;
+  padding: 12px 15px;
+  border: 2px solid rgba(37, 211, 102, 0.2);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.9);
+  font-size: 1em;
+  font-weight: 500;
+  color: #2d3748;
+  transition: all 0.3s ease;
+}
+
+.phone-input:focus {
+  outline: none;
+  border-color: #25d366;
+  box-shadow: 0 0 0 3px rgba(37, 211, 102, 0.1);
+}
+
+.phone-input::placeholder {
+  color: #a0aec0;
+  font-weight: 400;
+}
+
+.whatsapp-send-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px 30px;
+  background: linear-gradient(135deg, #25d366 0%, #128c7e 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 1.1em;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(37, 211, 102, 0.3);
+  margin: 0 auto;
+}
+
+.whatsapp-send-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(37, 211, 102, 0.4);
+  background: linear-gradient(135deg, #20c05a 0%, #0f7a6b 100%);
+}
+
+.whatsapp-send-btn:active {
+  transform: translateY(0);
+}
+
+.whatsapp-send-btn:disabled {
+  background: linear-gradient(135deg, #a0aec0 0%, #718096 100%);
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: 0 2px 8px rgba(160, 174, 192, 0.3);
+}
+
+.whatsapp-send-btn:disabled:hover {
+  transform: none;
+  box-shadow: 0 2px 8px rgba(160, 174, 192, 0.3);
+  background: linear-gradient(135deg, #a0aec0 0%, #718096 100%);
+}
+
+.whatsapp-icon {
+  font-size: 1.2em;
+}
+
+.whatsapp-note {
+  margin-top: 20px;
+  font-size: 0.95em;
+  color: #4a5568;
+  font-style: italic;
+  line-height: 1.5;
+}
+
 #eneagram-test-wrapper .restart-container {
   text-align: center;
   margin: 30px 0;
@@ -806,6 +1012,35 @@ body::before {
   text-align: center;
   font-size: 0.9em;
   color: #666;
+}
+
+/* Developed By Section */
+.developed-by {
+  margin-top: 15px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9em;
+  color: #666;
+}
+
+.developed-by span {
+  font-weight: 500;
+}
+
+.media-icon {
+  max-width: 80px;
+  height: auto;
+  opacity: 0.9;
+  transition: all 0.3s ease;
+  filter: grayscale(100%) brightness(0) saturate(100%) invert(25%) sepia(100%) saturate(2000%) hue-rotate(260deg) brightness(90%) contrast(120%);
+}
+
+.media-icon:hover {
+  opacity: 1;
+  filter: grayscale(100%) brightness(0) saturate(100%) invert(25%) sepia(100%) saturate(2000%) hue-rotate(260deg) brightness(90%) contrast(120%) drop-shadow(0 2px 8px rgba(128, 0, 128, 0.3));
+  transform: scale(1.05);
 }
 
 /* Responsive para tablets */
@@ -858,11 +1093,11 @@ body::before {
   }
 
   .description-title {
-    font-size: 1.8em;
+    font-size: 2em;
   }
 
   .description-text {
-    font-size: 1.1em;
+    font-size: 1.2em;
   }
 
   .instructions-container {
@@ -984,6 +1219,57 @@ body::before {
     font-size: 0.98em;
     margin-bottom: 12px;
   }
+  
+  /* Media icon responsive */
+  .media-icon {
+    max-width: 60px;
+  }
+  
+  .developed-by {
+    font-size: 0.85em;
+    gap: 6px;
+  }
+  
+  /* WhatsApp section responsive */
+  .whatsapp-contact-section {
+    margin: 30px 0;
+    padding: 20px;
+  }
+  
+  .whatsapp-title {
+    font-size: 1.2em;
+    margin-bottom: 20px;
+  }
+  
+  .whatsapp-form {
+    max-width: 100%;
+    gap: 15px;
+  }
+  
+  .phone-input-container {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .country-code {
+    width: 100%;
+    min-width: auto;
+  }
+  
+  .phone-input {
+    width: 100%;
+  }
+  
+  .whatsapp-send-btn {
+    width: 100%;
+    padding: 12px 20px;
+    font-size: 1em;
+  }
+  
+  .whatsapp-note {
+    font-size: 0.9em;
+    margin-top: 15px;
+  }
 }
 
 /* Spinner de carga */
@@ -993,6 +1279,199 @@ body::before {
   }
   100% {
     transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+/* Full Screen WhatsApp Loader */
+.whatsapp-fullscreen-loader {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, rgba(37, 211, 102, 0.95) 0%, rgba(25, 130, 196, 0.95) 100%);
+  backdrop-filter: blur(10px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 10000;
+  animation: whatsappLoaderFadeIn 0.3s ease-out;
+}
+
+.whatsapp-loader-content {
+  text-align: center;
+  color: white;
+  max-width: 400px;
+  padding: 40px;
+}
+
+.whatsapp-loader-spinner {
+  width: 80px;
+  height: 80px;
+  border: 4px solid rgba(255, 255, 255, 0.3);
+  border-top: 4px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 30px;
+}
+
+.whatsapp-loader-title {
+  font-size: 1.8em;
+  font-weight: 700;
+  margin-bottom: 15px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+.whatsapp-loader-subtitle {
+  font-size: 1.1em;
+  margin-bottom: 20px;
+  opacity: 0.9;
+  line-height: 1.5;
+}
+
+.whatsapp-loader-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.whatsapp-loader-dot {
+  width: 10px;
+  height: 10px;
+  background: white;
+  border-radius: 50%;
+  animation: whatsappPulse 1.5s infinite;
+}
+
+.whatsapp-loader-dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.whatsapp-loader-dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes whatsappLoaderFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes whatsappPulse {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.3);
+  }
+}
+
+/* Full Screen Results Loader */
+.results-fullscreen-loader {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, rgba(25, 130, 196, 0.95) 0%, rgba(255, 89, 94, 0.95) 100%);
+  backdrop-filter: blur(10px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 10000;
+  animation: resultsLoaderFadeIn 0.3s ease-out;
+}
+
+.results-loader-content {
+  text-align: center;
+  color: white;
+  max-width: 400px;
+  padding: 40px;
+}
+
+.results-loader-spinner {
+  width: 80px;
+  height: 80px;
+  border: 4px solid rgba(255, 255, 255, 0.3);
+  border-top: 4px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 30px;
+}
+
+.results-loader-title {
+  font-size: 1.8em;
+  font-weight: 700;
+  margin-bottom: 15px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+.results-loader-subtitle {
+  font-size: 1.1em;
+  margin-bottom: 20px;
+  opacity: 0.9;
+  line-height: 1.5;
+}
+
+.results-loader-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.results-loader-dot {
+  width: 10px;
+  height: 10px;
+  background: white;
+  border-radius: 50%;
+  animation: resultsPulse 1.5s infinite;
+}
+
+.results-loader-dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.results-loader-dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes resultsLoaderFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes resultsPulse {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.3);
   }
 }
 
@@ -1191,6 +1670,39 @@ body::before {
     padding: 12px 16px !important;
     border-radius: 10px !important;
   }
+}
+
+/* Estilos para el tipo dominante */
+.dominant-type {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+/* Clases para colores de tipos DISC */
+.disc-result-dominancia {
+    color: #FF595E !important; /* Rojo */
+    display: inline !important;
+    font-weight: 600 !important;
+}
+
+.disc-result-influencia {
+    color: #FFCA3A !important; /* Amarillo */
+    display: inline !important;
+    font-weight: 600 !important;
+}
+
+.disc-result-estabilidad {
+    color: #22C55E !important; /* Verde */
+    display: inline !important;
+    font-weight: 600 !important;
+}
+
+.disc-result-cumplimiento {
+    color: #1982C4 !important; /* Azul */
+    display: inline !important;
+    font-weight: 600 !important;
 }
 
 

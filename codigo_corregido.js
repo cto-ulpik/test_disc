@@ -665,7 +665,7 @@ const allQuestionsData = [
 const typeColors = [
   "#FF595E", // Dominancia
   "#FFCA3A", // Influencia
-  "#8AC926", // Estabilidad
+  "#22C55E", // Estabilidad (verde más estándar)
   "#1982C4", // Cumplimiento
 ];
 const typeLabels = ["Dominancia", "Influencia", "Estabilidad", "Cumplimiento"];
@@ -755,6 +755,12 @@ function createPaginationButtons() {
       currentPage--;
       renderCurrentPage();
       updatePaginationButtons();
+      
+      // Scroll suave hacia la parte superior de la página
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
     }
   });
 
@@ -773,8 +779,13 @@ function createPaginationButtons() {
       currentPage++;
       renderCurrentPage();
       updatePaginationButtons();
+      
+      // Scroll suave hacia la parte superior de la página
       setTimeout(() => {
-        quizContainer.scrollIntoView({ behavior: "smooth", block: "start" });
+        window.scrollTo({
+          top: 0,
+          behavior: 'smooth'
+        });
       }, 50);
     }
   });
@@ -1041,19 +1052,47 @@ function displayResults(scores) {
   )
     return;
 
-  const loadingSpinner = document.querySelector("#loading-spinner");
-  loadingSpinner.style.display = "block";
-  resultsContainer.style.display = "none";
-
-  setTimeout(() => {
-    loadingSpinner.style.display = "none";
-    resultsContainer.style.display = "block";
+  // Mostrar los resultados directamente ya que el loader se maneja externamente
+  resultsContainer.style.display = "block";
 
     const maxScore = Math.max(...scores);
     const dominantTypeIndex = scores.indexOf(maxScore);
     const dominantType = dominantTypeIndex + 1;
 
-  resultsTextDiv.innerHTML = `<p class="dominant-type">Tu estilo DISC predominante es: <strong>${typeLabels[dominantTypeIndex]}</strong></p>`;
+  // Obtener el color del tipo dominante
+  const dominantColor = typeColors[dominantTypeIndex];
+  
+  // Debug: verificar valores
+  console.log('=== DEBUG DISC RESULTS ===');
+  console.log('Scores array:', scores);
+  console.log('Max Score:', maxScore);
+  console.log('Dominant Type Index:', dominantTypeIndex);
+  console.log('Type Labels:', typeLabels);
+  console.log('Type Colors:', typeColors);
+  console.log('Selected Type:', typeLabels[dominantTypeIndex]);
+  console.log('Selected Color:', typeColors[dominantTypeIndex]);
+  console.log('Expected colors:');
+  console.log('- Dominancia (index 0):', typeColors[0], '(should be red)');
+  console.log('- Influencia (index 1):', typeColors[1], '(should be yellow)');
+  console.log('- Estabilidad (index 2):', typeColors[2], '(should be green)');
+  console.log('- Cumplimiento (index 3):', typeColors[3], '(should be blue)');
+  console.log('========================');
+  
+    // Determinar la clase CSS basada en el tipo
+    let discClass = '';
+    if (typeLabels[dominantTypeIndex] === 'Dominancia') {
+      discClass = 'disc-result-dominancia';
+    } else if (typeLabels[dominantTypeIndex] === 'Influencia') {
+      discClass = 'disc-result-influencia';
+    } else if (typeLabels[dominantTypeIndex] === 'Estabilidad') {
+      discClass = 'disc-result-estabilidad';
+    } else if (typeLabels[dominantTypeIndex] === 'Cumplimiento') {
+      discClass = 'disc-result-cumplimiento';
+    }
+
+    console.log('Using CSS class:', discClass, 'for type:', typeLabels[dominantTypeIndex]);
+
+    resultsTextDiv.innerHTML = `<p class="dominant-type" style="color: #2d3748; font-weight: 600;">Tu estilo DISC predominante es: <span class="${discClass}">${typeLabels[dominantTypeIndex]}</span></p>`;
 
     drawChart(scores, dominantTypeIndex);
 
@@ -1083,7 +1122,7 @@ function displayResults(scores) {
 
     resultsTextDiv.innerHTML += `
             <p style="color:#2ecc71;font-weight:bold;margin-top:15px;">
-                ¡Qué lindo ser quien eres! ¡Celebra tu tipo de personalidad único! 🎉
+                ¡Qué lindo ser quien eres! ¡Celebra tu tipo de comportamiento único! 🎉
             </p>
             <div class="final-message" style="margin-top:20px;font-size:1.1em;">
                 Ahora que conoces tu tipo, aprovecha estas características únicas para seguir creciendo y desarrollándote. ¡El mundo necesita exactamente quién eres!
@@ -1091,7 +1130,6 @@ function displayResults(scores) {
         `;
 
     resultsContainer.scrollIntoView({ behavior: "smooth" });
-  }, 2500);
 }
 
 function drawChart(scores, dominantTypeIndex) {
@@ -1106,9 +1144,19 @@ function drawChart(scores, dominantTypeIndex) {
   }
   const maxScorePerType = questionsPerType * 5;
 
-  // Crear array de colores donde solo el tipo dominante tiene color
-  const backgroundColors = Array(numTypes).fill(grayColor);
-  backgroundColors[dominantTypeIndex] = typeColors[dominantTypeIndex];
+  // Mostrar todos los colores, pero destacar el dominante
+  const backgroundColors = [...typeColors];
+  const borderColors = [...typeColors];
+  
+  // Hacer el tipo dominante más opaco y los otros más transparentes
+  for (let i = 0; i < numTypes; i++) {
+    if (i === dominantTypeIndex) {
+      backgroundColors[i] = typeColors[i];
+    } else {
+      // Hacer los otros tipos más transparentes
+      backgroundColors[i] = typeColors[i] + '80'; // 50% opacity
+    }
+  }
 
   // Configuración del gráfico de barras
   resultsChart = new Chart(chartCtx, {
@@ -1120,8 +1168,8 @@ function drawChart(scores, dominantTypeIndex) {
           label: "Puntuación",
           data: scores,
           backgroundColor: backgroundColors,
-          borderColor: typeColors,
-          borderWidth: 2,
+          borderColor: borderColors,
+          borderWidth: 3,
         },
       ],
     },
@@ -1181,6 +1229,34 @@ function hideAlert() {
   alertMessageDiv.style.display = "none";
 }
 
+// Función para mostrar loader de resultados
+function showResultsLoader() {
+  const loader = document.createElement('div');
+  loader.className = 'results-fullscreen-loader';
+  loader.id = 'results-loader';
+  loader.innerHTML = `
+    <div class="results-loader-content">
+      <div class="results-loader-spinner"></div>
+      <h3 class="results-loader-title">Procesando tus resultados...</h3>
+      <p class="results-loader-subtitle">Analizando tus respuestas y calculando tu perfil DISC</p>
+      <div class="results-loader-dots">
+        <div class="results-loader-dot"></div>
+        <div class="results-loader-dot"></div>
+        <div class="results-loader-dot"></div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(loader);
+}
+
+// Función para ocultar loader de resultados
+function hideResultsLoader() {
+  const loader = document.getElementById('results-loader');
+  if (loader) {
+    loader.remove();
+  }
+}
+
 if (restartTestBtn) {
   restartTestBtn.addEventListener("click", () => {
     if (resultsContainer) resultsContainer.style.display = "none";
@@ -1210,6 +1286,12 @@ if (startTestBtn) {
     
     // Inicializar el quiz directamente sin crear documento en Firestore
     initializeQuiz();
+    
+    // Scroll suave hacia la parte superior de la página
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
   });
 } else {
   console.warn(
@@ -1262,6 +1344,207 @@ async function forzarCreacionDocumento() {
   }
 }
 
+// Función para mostrar el loader de WhatsApp
+function showWhatsAppLoader() {
+  const loader = document.createElement('div');
+  loader.className = 'whatsapp-fullscreen-loader';
+  loader.id = 'whatsapp-loader';
+  loader.innerHTML = `
+    <div class="whatsapp-loader-content">
+      <div class="whatsapp-loader-spinner"></div>
+      <h3 class="whatsapp-loader-title">Procesando tu solicitud...</h3>
+      <p class="whatsapp-loader-subtitle">Guardando tu número de WhatsApp y preparando el contacto</p>
+      <div class="whatsapp-loader-dots">
+        <div class="whatsapp-loader-dot"></div>
+        <div class="whatsapp-loader-dot"></div>
+        <div class="whatsapp-loader-dot"></div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(loader);
+}
+
+// Función para ocultar el loader de WhatsApp
+function hideWhatsAppLoader() {
+  const loader = document.getElementById('whatsapp-loader');
+  if (loader) {
+    loader.remove();
+  }
+}
+
+// Función para actualizar Firestore con el número de WhatsApp
+async function updateFirestoreWithWhatsApp(phoneNumber) {
+  if (!firebaseAvailable || !firestoreDocRef) {
+    console.log('Firebase no disponible o documento no creado');
+    return false;
+  }
+  
+  try {
+    await firestoreDocRef.update({ 
+      num_whats: phoneNumber,
+      whatsapp_timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    console.log('✓ Número de WhatsApp guardado en Firestore');
+    return true;
+  } catch (error) {
+    console.error('Error guardando número de WhatsApp:', error);
+    return false;
+  }
+}
+
+// Función para limpiar y formatear número de WhatsApp
+function cleanPhoneNumber(phoneNumber, countryCode) {
+    // Eliminar espacios y caracteres no numéricos
+    let cleanNumber = phoneNumber.replace(/\D/g, '');
+    
+    // Eliminar el 0 inicial si existe
+    if (cleanNumber.startsWith('0')) {
+        cleanNumber = cleanNumber.substring(1);
+    }
+    
+    // Unir código de país con número limpio
+    const fullNumber = `${countryCode}${cleanNumber}`;
+    
+    console.log('Phone cleaning:', {
+        original: phoneNumber,
+        cleaned: cleanNumber,
+        countryCode: countryCode,
+        final: fullNumber
+    });
+    
+    return {
+        cleanNumber: cleanNumber,
+        fullNumber: fullNumber
+    };
+}
+
+// Función para manejar el envío de WhatsApp
+async function handleWhatsAppSubmit() {
+  const whatsappSendBtn = document.getElementById('whatsapp-send-btn');
+  const countryCode = document.getElementById('country-code').value;
+  const phoneInput = document.getElementById('phone-input');
+  const phoneNumber = phoneInput.value.trim();
+  
+  // Verificar si el botón ya está deshabilitado
+  if (whatsappSendBtn.disabled) {
+    return;
+  }
+  
+  if (!phoneNumber) {
+    showAlert('Por favor ingresa tu número de WhatsApp');
+    return;
+  }
+  
+  // Validar que el número solo contenga dígitos
+  if (!/^\d+$/.test(phoneNumber)) {
+    showAlert('Por favor ingresa solo números en el campo de teléfono');
+    return;
+  }
+  
+  // Limpiar y formatear el número
+  const { cleanNumber, fullNumber } = cleanPhoneNumber(phoneNumber, countryCode);
+  
+  // Validar longitud mínima y máxima para números de celular (usando número limpio)
+  if (cleanNumber.length < 7) {
+    showAlert('El número de teléfono debe tener al menos 7 dígitos');
+    return;
+  }
+  
+  if (cleanNumber.length > 15) {
+    showAlert('El número de teléfono no puede tener más de 15 dígitos');
+    return;
+  }
+  
+  // Usar el número completo para envío
+  const fullPhoneNumber = fullNumber;
+  
+  // Deshabilitar el botón inmediatamente
+  whatsappSendBtn.disabled = true;
+  whatsappSendBtn.innerHTML = '<span class="whatsapp-icon">⏳</span><span>Procesando...</span>';
+  
+  // Mostrar loader de pantalla completa
+  showWhatsAppLoader();
+  
+  try {
+    // Actualizar Firestore con el número de WhatsApp
+    const firestoreSuccess = await updateFirestoreWithWhatsApp(fullPhoneNumber);
+    
+    // Simular tiempo de procesamiento
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // Ocultar loader
+    hideWhatsAppLoader();
+    
+    if (firestoreSuccess) {
+      // Crear mensaje para WhatsApp
+      const message = `Hola! Me interesa recibir más información sobre mi perfil DISC. Mi número es: ${fullPhoneNumber}`;
+      const whatsappUrl = `https://wa.me/${fullPhoneNumber.replace('+', '')}?text=${encodeURIComponent(message)}`;
+      
+      // Abrir WhatsApp
+      window.open(whatsappUrl, '_blank');
+      
+      // Mostrar mensaje de confirmación
+      if (typeof Toastify !== 'undefined') {
+        Toastify({
+          text: "✅ ¡Número guardado! Te contactaremos pronto.",
+          duration: 5000,
+          gravity: "top",
+          position: "center",
+          backgroundColor: "linear-gradient(to right, #25d366, #128c7e)",
+          className: "toastify-success",
+          style: {
+            fontSize: "16px",
+            fontWeight: "600",
+            borderRadius: "12px",
+            boxShadow: "0 4px 15px rgba(37, 211, 102, 0.3)"
+          }
+        }).showToast();
+      }
+      
+      // Cambiar el botón a estado de éxito
+      whatsappSendBtn.innerHTML = '<span class="whatsapp-icon">✅</span><span>Enviado</span>';
+      
+      // Limpiar el formulario
+      phoneInput.value = '';
+    } else {
+      // Si falla Firestore, aún permitir WhatsApp pero mostrar advertencia
+      const message = `Hola! Me interesa recibir más información sobre mi perfil DISC. Mi número es: ${fullPhoneNumber}`;
+      const whatsappUrl = `https://wa.me/${fullPhoneNumber.replace('+', '')}?text=${encodeURIComponent(message)}`;
+      
+      window.open(whatsappUrl, '_blank');
+      
+      whatsappSendBtn.innerHTML = '<span class="whatsapp-icon">📱</span><span>Enviar</span>';
+      whatsappSendBtn.disabled = false;
+      
+      if (typeof Toastify !== 'undefined') {
+        Toastify({
+          text: "⚠️ Redirigiendo a WhatsApp. Hubo un problema guardando tu número, pero puedes contactarnos directamente.",
+          duration: 5000,
+          gravity: "top",
+          position: "center",
+          backgroundColor: "linear-gradient(to right, #f59e0b, #fbbf24)",
+          className: "toastify-warning",
+          style: {
+            fontSize: "16px",
+            fontWeight: "600",
+            borderRadius: "12px",
+            boxShadow: "0 4px 15px rgba(245, 158, 11, 0.3)"
+          }
+        }).showToast();
+      }
+    }
+  } catch (error) {
+    console.error('Error en el proceso de WhatsApp:', error);
+    hideWhatsAppLoader();
+    
+    // Restaurar botón en caso de error
+    whatsappSendBtn.innerHTML = '<span class="whatsapp-icon">📱</span><span>Enviar</span>';
+    whatsappSendBtn.disabled = false;
+    
+    showAlert('Hubo un error procesando tu solicitud. Por favor intenta nuevamente.');
+  }
+}
+
 // Agregar funciones globales para depuración
 window.diagnosticarFirebase = diagnosticarFirebase;
 window.forzarGuardadoRespuestas = forzarGuardadoRespuestas;
@@ -1308,6 +1591,9 @@ if (submitBtn) {
         }
       });
       
+      // Mostrar loader mientras se procesan los resultados
+      showResultsLoader();
+      
       // Crear documento en Firestore con el email proporcionado
       try {
         await crearDocumentoFirestore(email);
@@ -1319,7 +1605,11 @@ if (submitBtn) {
         guardarResultadoLocal(email, resultado, respuestasObj);
       }
       
-      displayResults(scores);
+      // Simular tiempo de procesamiento para mostrar el loader
+      setTimeout(() => {
+        hideResultsLoader();
+        displayResults(scores);
+      }, 2000);
     }
   });
 } else {
@@ -1336,3 +1626,46 @@ function obtenerDescripcionTipo(tipo) {
   };
   return descripciones[tipo] || "";
 }
+
+// Event listener para el botón de WhatsApp
+document.addEventListener('DOMContentLoaded', function() {
+  const whatsappSendBtn = document.getElementById('whatsapp-send-btn');
+  const phoneInput = document.getElementById('phone-input');
+  
+  if (whatsappSendBtn) {
+    whatsappSendBtn.addEventListener('click', handleWhatsAppSubmit);
+  }
+  
+  // Permitir envío con Enter en el campo de teléfono
+  if (phoneInput) {
+    phoneInput.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        handleWhatsAppSubmit();
+      }
+    });
+    
+    // Solo permitir números en el campo de teléfono
+    phoneInput.addEventListener('input', function(e) {
+      // Remover cualquier carácter que no sea número
+      let value = e.target.value.replace(/[^0-9]/g, '');
+      
+      // Limitar a 15 dígitos
+      if (value.length > 15) {
+        value = value.substring(0, 15);
+      }
+      
+      e.target.value = value;
+    });
+    
+    // Prevenir pegar texto que no sean números
+    phoneInput.addEventListener('paste', function(e) {
+      e.preventDefault();
+      let paste = (e.clipboardData || window.clipboardData).getData('text');
+      let numbersOnly = paste.replace(/[^0-9]/g, '');
+      if (numbersOnly.length > 15) {
+        numbersOnly = numbersOnly.substring(0, 15);
+      }
+      e.target.value = numbersOnly;
+    });
+  }
+});

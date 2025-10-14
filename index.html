@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Test DISC de Personalidad</title>
+    <title>Test DISC de Comportamiento</title>
     <link rel="stylesheet" href="styles.css" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Toastify para notificaciones modernas -->
@@ -39,7 +39,7 @@
   <body>
     <div id="eneagram-test-wrapper">
       <div class="container">
-        <h1>Test DISC de Personalidad</h1>
+        <h1>Test DISC de Comportamiento</h1>
         <div
           id="user-email-display"
           style="
@@ -63,14 +63,15 @@
 
           <!-- Descripción principal -->
           <div class="main-description">
-            <h2 class="description-title">Descubre tu estilo de personalidad</h2>
+            <h2 class="description-title">Descubre tu comportamiento en el trabajo</h2>
             <p class="description-text">
-              El test DISC evalúa tu personalidad en cuatro estilos principales:
-              <span class="highlight">Dominancia</span>, <span class="highlight">Influencia</span>, 
-              <span class="highlight">Estabilidad</span> y <span class="highlight">Cumplimiento</span>.
+              Evalúa tu comportamientos en cuatro estilos principales:
+              <div>
+              <span class="disc-dominancia">Dominancia</span>, <span class="disc-influencia">Influencia</span>, 
+              <span class="disc-estabilidad">Estabilidad</span> y <span class="disc-cumplimiento">Cumplimiento</span>.</div>
             </p>
             <p class="description-subtitle">
-              Descubre cuál es tu estilo predominante y cómo puedes potenciar tus fortalezas.
+              Este test te ayudar a a descubrir la mejor forma para trabajar.
             </p>
           </div>
 
@@ -116,21 +117,6 @@
 
           <div id="submit-btn" class="submit-button">Calcular Resultados</div>
         </div>
-        <div id="loading-spinner" style="display: none; text-align: center">
-          <p>Calculando resultados...</p>
-          <div
-            class="spinner"
-            style="
-              border: 4px solid #ccc;
-              border-top: 4px solid #3498db;
-              border-radius: 50%;
-              width: 30px;
-              height: 30px;
-              animation: spin 1s linear infinite;
-              margin: auto;
-            "
-          ></div>
-        </div>
         <div id="results-container" style="display: none">
           <h2>Tus Resultados DISC</h2>
           <div id="results-text"></div>
@@ -175,13 +161,47 @@
               </p>
             </div>
           </div>
+          
+          <!-- Sección de WhatsApp -->
+          <div class="whatsapp-contact-section">
+            <h3 class="whatsapp-title">Si deseas recibir más información o asesoría déjanos tu WhatsApp</h3>
+            <div class="whatsapp-form">
+              <div class="phone-input-container">
+                <select class="country-code" id="country-code">
+                  <option value="+593">🇪🇨 +593</option>
+                  <option value="+57">🇨🇴 +57</option>
+                  <option value="+1">🇺🇸 +1</option>
+                  <option value="+52">🇲🇽 +52</option>
+                  <option value="+34">🇪🇸 +34</option>
+                  <option value="+54">🇦🇷 +54</option>
+                  <option value="+56">🇨🇱 +56</option>
+                  <option value="+51">🇵🇪 +51</option>
+                  <option value="+58">🇻🇪 +58</option>
+                  <option value="+55">🇧🇷 +55</option>
+                </select>
+                <input type="tel" class="phone-input" id="phone-input" placeholder="Número de WhatsApp" maxlength="15" pattern="[0-9]*" inputmode="numeric">
+              </div>
+              <button class="whatsapp-send-btn" id="whatsapp-send-btn">
+                <span class="whatsapp-icon">📱</span>
+                <span>Enviar</span>
+              </button>
+            </div>
+            <p class="whatsapp-note">Te contactaremos por WhatsApp para brindarte información adicional sobre tu perfil DISC</p>
+          </div>
+          
           <div class="restart-container">
             <button id="restart-test-btn">Reiniciar Test</button>
           </div>
         </div>
 
         <footer>
-          <p>© 2025 Test DISC - Todos los derechos reservados</p>
+          <p>© 2025 Test de DISC · IK SAS · Todos los derechos reservados.</p>
+          <div class="developed-by">
+            <span>Desarrollado por</span>
+            <img src="media/negro_ul.svg" 
+                 alt="Media" 
+                 class="media-icon">
+          </div>
         </footer>
       </div>
     </div>
