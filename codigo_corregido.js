@@ -3,11 +3,11 @@
 const db = firebase.firestore();
 const auth = firebase.auth();
 
-// Variables globales
-let shuffledQuestions = [];
-let userResponses = [];
-let currentPage = 1;
-const questionsPerPage = 20;
+// Variables globales para el nuevo sistema de bloques
+let shuffledBlocks = [];
+let userResponses = []; // Array de objetos {most: dimension, least: dimension}
+let currentBlockIndex = 0;
+const blocksPerPage = 1; // Mostrar un bloque a la vez
 
 // Prueba de Toastify
 console.log('Toastify disponible:', typeof Toastify !== 'undefined');
@@ -168,7 +168,7 @@ async function crearDocumentoFirestore(email) {
       user_id: uid,
       consentimiento: true,
       fecha_creacion: firebase.firestore.FieldValue.serverTimestamp(),
-      version_test: "disc_v1.0",
+      version_test: "disc_v2.0",
       respuestas: {},
     };
     
@@ -200,8 +200,13 @@ async function actualizarRespuestasFirestore() {
     let respuestasCount = 0;
     
     userResponses.forEach((resp, idx) => {
-      if (resp !== null) {
-        respuestasObj[`p${idx + 1}`] = resp.toString();
+      if (resp !== null && resp.most !== null && resp.least !== null) {
+        respuestasObj[`p${idx + 1}`] = {
+          most: resp.most,
+          least: resp.least,
+          mostDimension: resp.mostDimension,
+          leastDimension: resp.leastDimension
+        };
         respuestasCount++;
       }
     });
@@ -302,7 +307,7 @@ function guardarResultadoLocal(email, resultado, respuestas) {
       resultado,
       respuestas,
       fecha: new Date().toISOString(),
-      version: "disc_v1.0"
+      version: "disc_v2.0"
     };
     
     // Guardar en localStorage
@@ -399,9 +404,9 @@ function mostrarModalEmail() {
         </div>
         <div>
           <label for="modal-promociones-checkbox" style="display: flex; align-items: flex-start; gap: 12px; font-size: 0.95em; color: #4a5568; cursor: pointer; line-height: 1.5;">
-            <input type="checkbox" id="modal-promociones-checkbox" required
+            <input type="checkbox" id="modal-promociones-checkbox"
                    style="margin: 0; width: 18px; height: 18px; accent-color: #1982C4; flex-shrink: 0; margin-top: 2px;">
-            <span>Al hacer clic, autorizo recibir correos y promociones.</span>
+            <span>Al hacer clic, autorizo recibir correos y promociones (opcional).</span>
           </label>
         </div>
       </div>
@@ -449,8 +454,8 @@ function mostrarModalEmail() {
         saveBtn.style.display = 'inline-block';
       }
       
-      // Validar que todos los campos estén completos
-      const todoValido = emailValid && consentimientoValid && promocionesValid && todasRespondidas;
+      // Validar que todos los campos estén completos (promociones es opcional)
+      const todoValido = emailValid && consentimientoValid && todasRespondidas;
       
       if (todoValido) {
         emailInput.style.borderColor = '#2ecc40';
@@ -471,7 +476,7 @@ function mostrarModalEmail() {
     promocionesCheckbox.addEventListener('change', validateForm);
 
     // Event listeners
-    saveBtn.addEventListener('click', function() {
+    saveBtn.addEventListener('click', async function() {
       console.log('Botón Ver resultados presionado'); // Debug
       
       // Prueba simple de Toastify
@@ -541,10 +546,9 @@ function mostrarModalEmail() {
         return;
       }
       
-      if (!consentimientoValid || !promocionesValid) {
+      if (!consentimientoValid) {
         const faltantes = [];
         if (!consentimientoValid) faltantes.push('• Términos y condiciones');
-        if (!promocionesValid) faltantes.push('• Autorización de correos');
         
         console.log('Mostrando notificación de checkboxes faltantes'); // Debug
         const faltantesTexto = faltantes.join(', ');
@@ -565,7 +569,9 @@ function mostrarModalEmail() {
         return;
       }
       
-      // Si todo está válido, proceder
+      // Si todo está válido, guardar en Firestore y proceder
+      const acceptsPromotions = promocionesCheckbox.checked;
+      await updateFirestoreWithEmail(email, acceptsPromotions);
       document.body.removeChild(modal);
       resolve(email);
     });
@@ -618,48 +624,262 @@ let resultsChart = null;
 
 const numTypes = 4;
 
-// --- PREGUNTAS DISC (32 en total, 8 por tipo) ---
-// Test DISC clásico con 4 dimensiones: Dominancia, Influencia, Estabilidad, Cumplimiento
-const allQuestionsData = [
-  // Dominancia (D) - 8 preguntas
-  { text: "Me gusta tomar decisiones rápidamente.", type: 1 },
-  { text: "Prefiero liderar que seguir a otros.", type: 1 },
-  { text: "Me siento cómodo asumiendo riesgos.", type: 1 },
-  { text: "Me gusta enfrentar desafíos.", type: 1 },
-  { text: "Soy directo al comunicarme.", type: 1 },
-  { text: "Me motiva lograr resultados.", type: 1 },
-  { text: "No temo expresar opiniones fuertes.", type: 1 },
-  { text: "Prefiero actuar que esperar.", type: 1 },
-  
-  // Influencia (I) - 8 preguntas
-  { text: "Disfruto socializar con otras personas.", type: 2 },
-  { text: "Me gusta motivar y animar a otros.", type: 2 },
-  { text: "Soy optimista y entusiasta.", type: 2 },
-  { text: "Me adapto fácilmente a nuevas situaciones.", type: 2 },
-  { text: "Me gusta trabajar en equipo.", type: 2 },
-  { text: "Me siento cómodo hablando en público.", type: 2 },
-  { text: "Me gusta persuadir a los demás.", type: 2 },
-  { text: "Disfruto ser el centro de atención.", type: 2 },
-  
-  // Estabilidad (S) - 8 preguntas
-  { text: "Prefiero ambientes tranquilos y estables.", type: 3 },
-  { text: "Me gusta ayudar a los demás.", type: 3 },
-  { text: "Soy paciente y tolerante.", type: 3 },
-  { text: "Evito los conflictos siempre que puedo.", type: 3 },
-  { text: "Me adapto a las necesidades de los demás.", type: 3 },
-  { text: "Me gusta mantener rutinas.", type: 3 },
-  { text: "Soy una persona confiable.", type: 3 },
-  { text: "Prefiero escuchar antes que hablar.", type: 3 },
-  
-  // Cumplimiento (C) - 8 preguntas
-  { text: "Me gusta seguir reglas y procedimientos.", type: 4 },
-  { text: "Soy detallista y meticuloso.", type: 4 },
-  { text: "Prefiero planificar antes de actuar.", type: 4 },
-  { text: "Me gusta analizar la información antes de decidir.", type: 4 },
-  { text: "Valoro la precisión en mi trabajo.", type: 4 },
-  { text: "Me incomoda la improvisación.", type: 4 },
-  { text: "Prefiero tareas que requieren concentración.", type: 4 },
-  { text: "Me esfuerzo por evitar errores.", type: 4 },
+// --- BLOQUES DISC (28 bloques, 4 opciones cada uno) ---
+// Test DISC con metodología de elección forzada MOST/LEAST
+// Cada bloque tiene 4 opciones: una D, una I, una S, una C
+const discBlocks = [
+  // Bloque 1
+  {
+    options: [
+      { text: "Tomo decisiones rápidas ante presión para destrabar el avance.", dimension: "D" },
+      { text: "Motivo al equipo y conecto ideas para alinear a las personas.", dimension: "I" },
+      { text: "Mantengo la calma y doy soporte constante en procesos repetibles.", dimension: "S" },
+      { text: "Verifico criterios y evidencias antes de aprobar un entregable.", dimension: "C" }
+    ]
+  },
+  // Bloque 2
+  {
+    options: [
+      { text: "Impulso cambios inmediatos cuando veo oportunidades de mejora.", dimension: "D" },
+      { text: "Genero entusiasmo y construyo consenso alrededor de nuevas ideas.", dimension: "I" },
+      { text: "Proporciono estabilidad y continuidad en momentos de transición.", dimension: "S" },
+      { text: "Analizo sistemáticamente todos los aspectos antes de implementar.", dimension: "C" }
+    ]
+  },
+  // Bloque 3
+  {
+    options: [
+      { text: "Confronto directamente los problemas para resolverlos de inmediato.", dimension: "D" },
+      { text: "Uso mi influencia para movilizar recursos y personas hacia objetivos.", dimension: "I" },
+      { text: "Escucho pacientemente y busco soluciones que beneficien a todos.", dimension: "S" },
+      { text: "Documento meticulosamente cada paso para asegurar trazabilidad.", dimension: "C" }
+    ]
+  },
+  // Bloque 4
+  {
+    options: [
+      { text: "Asumo responsabilidad total por los resultados del proyecto.", dimension: "D" },
+      { text: "Inspiro confianza y creo conexiones que facilitan la colaboración.", dimension: "I" },
+      { text: "Mantengo el equilibrio y evito conflictos innecesarios en el equipo.", dimension: "S" },
+      { text: "Sigo protocolos establecidos para garantizar consistencia y calidad.", dimension: "C" }
+    ]
+  },
+  // Bloque 5
+  {
+    options: [
+      { text: "Desafío el status quo y busco formas más eficientes de trabajar.", dimension: "D" },
+      { text: "Comunico de manera persuasiva para ganar apoyo a mis propuestas.", dimension: "I" },
+      { text: "Valoro las relaciones y priorizo el bienestar del equipo.", dimension: "S" },
+      { text: "Reviso exhaustivamente cada detalle para evitar errores costosos.", dimension: "C" }
+    ]
+  },
+  // Bloque 6
+  {
+    options: [
+      { text: "Lidero con determinación y no me detengo ante obstáculos.", dimension: "D" },
+      { text: "Creo un ambiente positivo donde las ideas fluyen libremente.", dimension: "I" },
+      { text: "Proporciono apoyo constante y soy confiable en momentos difíciles.", dimension: "S" },
+      { text: "Mantengo estándares altos y aseguro que todo cumple con las especificaciones.", dimension: "C" }
+    ]
+  },
+  // Bloque 7
+  {
+    options: [
+      { text: "Actúo con urgencia cuando la situación lo requiere.", dimension: "D" },
+      { text: "Conecto con las personas y genero entusiasmo por los objetivos.", dimension: "I" },
+      { text: "Busco consenso y evito decisiones que puedan generar malestar.", dimension: "S" },
+      { text: "Planifico cuidadosamente cada acción para minimizar riesgos.", dimension: "C" }
+    ]
+  },
+  // Bloque 8
+  {
+    options: [
+      { text: "Supero obstáculos con determinación y enfoque en resultados.", dimension: "D" },
+      { text: "Facilito la comunicación y construyo puentes entre diferentes grupos.", dimension: "I" },
+      { text: "Mantengo la armonía y busco soluciones que satisfagan a todos.", dimension: "S" },
+      { text: "Implemento controles rigurosos para asegurar la calidad del trabajo.", dimension: "C" }
+    ]
+  },
+  // Bloque 9
+  {
+    options: [
+      { text: "Tomo el control cuando otros no pueden decidir.", dimension: "D" },
+      { text: "Energizo al equipo y creo momentum hacia los objetivos.", dimension: "I" },
+      { text: "Proporciono estabilidad emocional en situaciones estresantes.", dimension: "S" },
+      { text: "Aseguro que todos los procesos sigan las mejores prácticas.", dimension: "C" }
+    ]
+  },
+  // Bloque 10
+  {
+    options: [
+      { text: "Competir y ganar me motiva más que colaborar.", dimension: "D" },
+      { text: "Construir relaciones sólidas es fundamental para mi éxito.", dimension: "I" },
+      { text: "Mantener la paz y evitar conflictos es mi prioridad.", dimension: "S" },
+      { text: "Hacer las cosas correctamente es más importante que hacerlas rápido.", dimension: "C" }
+    ]
+  },
+  // Bloque 11
+  {
+    options: [
+      { text: "Prefiero dirigir proyectos que participar en equipos.", dimension: "D" },
+      { text: "Me siento cómodo siendo el centro de atención en reuniones.", dimension: "I" },
+      { text: "Valoro más la armonía del equipo que los resultados individuales.", dimension: "S" },
+      { text: "La precisión y exactitud son más importantes que la velocidad.", dimension: "C" }
+    ]
+  },
+  // Bloque 12
+  {
+    options: [
+      { text: "Busco constantemente nuevas oportunidades de crecimiento.", dimension: "D" },
+      { text: "Me gusta ser reconocido por mis contribuciones al equipo.", dimension: "I" },
+      { text: "Prefiero un ambiente de trabajo estable y predecible.", dimension: "S" },
+      { text: "Me enfoco en hacer las cosas de manera sistemática y ordenada.", dimension: "C" }
+    ]
+  },
+  // Bloque 13
+  {
+    options: [
+      { text: "Me siento cómodo tomando decisiones difíciles que otros evitan.", dimension: "D" },
+      { text: "Disfruto presentando ideas y convenciendo a otros de su valor.", dimension: "I" },
+      { text: "Prefiero escuchar y entender antes de actuar.", dimension: "S" },
+      { text: "Me aseguro de que todos los detalles estén correctos antes de proceder.", dimension: "C" }
+    ]
+  },
+  // Bloque 14
+  {
+    options: [
+      { text: "Me motiva más superar desafíos que mantener relaciones.", dimension: "D" },
+      { text: "Creo que las relaciones personales son clave para el éxito profesional.", dimension: "I" },
+      { text: "Creo que la cooperación es más valiosa que la competencia.", dimension: "S" },
+      { text: "Creo que seguir procedimientos establecidos evita problemas.", dimension: "C" }
+    ]
+  },
+  // Bloque 15
+  {
+    options: [
+      { text: "Actúo rápidamente cuando veo una oportunidad de mejora.", dimension: "D" },
+      { text: "Uso mi personalidad para influir positivamente en el ambiente.", dimension: "I" },
+      { text: "Mantengo la calma y busco soluciones que no generen fricción.", dimension: "S" },
+      { text: "Reviso cuidadosamente cada aspecto antes de tomar decisiones.", dimension: "C" }
+    ]
+  },
+  // Bloque 16
+  {
+    options: [
+      { text: "Prefiero liderar iniciativas que seguir instrucciones.", dimension: "D" },
+      { text: "Me gusta ser el punto de conexión entre diferentes personas.", dimension: "I" },
+      { text: "Valoro la estabilidad y evito cambios innecesarios.", dimension: "S" },
+      { text: "Me enfoco en la calidad y precisión de cada tarea.", dimension: "C" }
+    ]
+  },
+  // Bloque 17
+  {
+    options: [
+      { text: "Me siento cómodo asumiendo riesgos calculados.", dimension: "D" },
+      { text: "Disfruto motivando a otros y creando entusiasmo.", dimension: "I" },
+      { text: "Prefiero un enfoque gradual y cuidadoso para los cambios.", dimension: "S" },
+      { text: "Me aseguro de que todo esté documentado y verificado.", dimension: "C" }
+    ]
+  },
+  // Bloque 18
+  {
+    options: [
+      { text: "Busco constantemente formas de optimizar y mejorar procesos.", dimension: "D" },
+      { text: "Creo que la comunicación abierta es fundamental para el éxito.", dimension: "I" },
+      { text: "Creo que mantener buenas relaciones es más importante que ganar.", dimension: "S" },
+      { text: "Creo que la consistencia y el orden son fundamentales.", dimension: "C" }
+    ]
+  },
+  // Bloque 19
+  {
+    options: [
+      { text: "Me siento cómodo siendo directo y franco en mis comunicaciones.", dimension: "D" },
+      { text: "Me gusta crear un ambiente donde todos se sientan valorados.", dimension: "I" },
+      { text: "Prefiero buscar consenso antes de tomar decisiones importantes.", dimension: "S" },
+      { text: "Me enfoco en asegurar que todo cumpla con los estándares establecidos.", dimension: "C" }
+    ]
+  },
+  // Bloque 20
+  {
+    options: [
+      { text: "Me motiva más lograr resultados que mantener armonía.", dimension: "D" },
+      { text: "Me motiva más inspirar a otros que seguir procedimientos.", dimension: "I" },
+      { text: "Me motiva más ayudar a otros que competir por reconocimiento.", dimension: "S" },
+      { text: "Me motiva más hacer las cosas correctamente que hacerlas rápido.", dimension: "C" }
+    ]
+  },
+  // Bloque 21
+  {
+    options: [
+      { text: "Prefiero tomar decisiones rápidas que analizar exhaustivamente.", dimension: "D" },
+      { text: "Prefiero trabajar en equipo que individualmente.", dimension: "I" },
+      { text: "Prefiero mantener estabilidad que buscar cambios constantes.", dimension: "S" },
+      { text: "Prefiero seguir procedimientos que improvisar soluciones.", dimension: "C" }
+    ]
+  },
+  // Bloque 22
+  {
+    options: [
+      { text: "Me siento más cómodo dirigiendo que siendo dirigido.", dimension: "D" },
+      { text: "Me siento más cómodo siendo visible que trabajando en segundo plano.", dimension: "I" },
+      { text: "Me siento más cómodo apoyando que liderando.", dimension: "S" },
+      { text: "Me siento más cómodo verificando que creando.", dimension: "C" }
+    ]
+  },
+  // Bloque 23
+  {
+    options: [
+      { text: "Busco constantemente nuevas formas de superar limitaciones.", dimension: "D" },
+      { text: "Busco constantemente nuevas formas de conectar con otros.", dimension: "I" },
+      { text: "Busco constantemente nuevas formas de mantener la armonía.", dimension: "S" },
+      { text: "Busco constantemente nuevas formas de mejorar la precisión.", dimension: "C" }
+    ]
+  },
+  // Bloque 24
+  {
+    options: [
+      { text: "Me siento más satisfecho cuando supero obstáculos difíciles.", dimension: "D" },
+      { text: "Me siento más satisfecho cuando ayudo a otros a tener éxito.", dimension: "I" },
+      { text: "Me siento más satisfecho cuando mantengo la paz en el equipo.", dimension: "S" },
+      { text: "Me siento más satisfecho cuando todo está perfectamente organizado.", dimension: "C" }
+    ]
+  },
+  // Bloque 25
+  {
+    options: [
+      { text: "Prefiero enfrentar conflictos directamente que evitarlos.", dimension: "D" },
+      { text: "Prefiero generar entusiasmo que mantener calma.", dimension: "I" },
+      { text: "Prefiero buscar compromisos que imponer soluciones.", dimension: "S" },
+      { text: "Prefiero analizar detalladamente que actuar intuitivamente.", dimension: "C" }
+    ]
+  },
+  // Bloque 26
+  {
+    options: [
+      { text: "Me siento más energizado cuando tengo desafíos que resolver.", dimension: "D" },
+      { text: "Me siento más energizado cuando puedo influir positivamente en otros.", dimension: "I" },
+      { text: "Me siento más energizado cuando puedo proporcionar estabilidad.", dimension: "S" },
+      { text: "Me siento más energizado cuando puedo perfeccionar los detalles.", dimension: "C" }
+    ]
+  },
+  // Bloque 27
+  {
+    options: [
+      { text: "Creo que la competencia sana mejora el rendimiento del equipo.", dimension: "D" },
+      { text: "Creo que la colaboración abierta mejora los resultados del equipo.", dimension: "I" },
+      { text: "Creo que la cooperación armoniosa mejora la productividad del equipo.", dimension: "S" },
+      { text: "Creo que los procesos bien definidos mejoran la eficiencia del equipo.", dimension: "C" }
+    ]
+  },
+  // Bloque 28
+  {
+    options: [
+      { text: "Me siento más realizado cuando logro objetivos ambiciosos.", dimension: "D" },
+      { text: "Me siento más realizado cuando construyo relaciones significativas.", dimension: "I" },
+      { text: "Me siento más realizado cuando proporciono apoyo constante.", dimension: "S" },
+      { text: "Me siento más realizado cuando aseguro la excelencia en cada detalle.", dimension: "C" }
+    ]
+  }
 ];
 
 const typeColors = [
@@ -668,7 +888,7 @@ const typeColors = [
   "#22C55E", // Estabilidad (verde más estándar)
   "#1982C4", // Cumplimiento
 ];
-const typeLabels = ["Dominancia", "Influencia", "Estabilidad", "Cumplimiento"];
+const typeLabels = ["Dominancia", "Influencia", "Serenidad", "Cumplimiento"];
 const grayColor = "#CCCCCC";
 
 // Función para inicializar el quiz
@@ -678,19 +898,19 @@ function initializeQuiz() {
     return;
   }
 
-  // Validar que tenemos preguntas
-  if (!allQuestionsData || allQuestionsData.length === 0) {
-    console.error("No hay preguntas disponibles");
-    showAlert("Error: No hay preguntas disponibles para el test.");
+  // Validar que tenemos bloques
+  if (!discBlocks || discBlocks.length === 0) {
+    console.error("No hay bloques disponibles");
+    showAlert("Error: No hay bloques disponibles para el test.");
     return;
   }
 
-  // Mezclar preguntas aleatoriamente
-  shuffledQuestions = [...allQuestionsData].sort(() => Math.random() - 0.5);
-  userResponses = new Array(shuffledQuestions.length).fill(null);
-  currentPage = 1;
+  // Mezclar bloques aleatoriamente
+  shuffledBlocks = [...discBlocks].sort(() => Math.random() - 0.5);
+  userResponses = new Array(shuffledBlocks.length).fill(null);
+  currentBlockIndex = 0;
   
-  console.log(`Test inicializado con ${shuffledQuestions.length} preguntas`);
+  console.log(`Test inicializado con ${shuffledBlocks.length} bloques`);
 
   // Mostrar el formulario del quiz
   startTestContainer.style.display = "none";
@@ -700,8 +920,8 @@ function initializeQuiz() {
   // Crear botones de paginación
   createPaginationButtons();
   
-  // Renderizar primera página
-  renderCurrentPage();
+  // Renderizar primer bloque
+  renderCurrentBlock();
   updatePaginationButtons();
 }
 
@@ -751,9 +971,9 @@ function createPaginationButtons() {
 
   // Event listeners para los botones
   prevBtn.addEventListener("click", () => {
-    if (currentPage > 1) {
-      currentPage--;
-      renderCurrentPage();
+    if (currentBlockIndex > 0) {
+      currentBlockIndex--;
+      renderCurrentBlock();
       updatePaginationButtons();
       
       // Scroll suave hacia la parte superior de la página
@@ -765,19 +985,16 @@ function createPaginationButtons() {
   });
 
   nextBtn.addEventListener("click", async () => {
-    if (!areCurrentPageQuestionsAnswered()) {
+    if (!isCurrentBlockCompleted()) {
       showAlert(
-        "Por favor, responde todas las preguntas de esta página antes de continuar."
+        "Por favor, selecciona una opción MÁS y una opción MENOS antes de continuar."
       );
       return;
     }
 
-    // Ya no guardamos respuestas al cambiar de página - solo al final
-
-    const totalPages = Math.ceil(shuffledQuestions.length / questionsPerPage);
-    if (currentPage < totalPages) {
-      currentPage++;
-      renderCurrentPage();
+    if (currentBlockIndex < shuffledBlocks.length - 1) {
+      currentBlockIndex++;
+      renderCurrentBlock();
       updatePaginationButtons();
       
       // Scroll suave hacia la parte superior de la página
@@ -796,116 +1013,282 @@ function createPaginationButtons() {
   paginationControlsDiv.appendChild(buttonsContainer);
 }
 
-function renderCurrentPage() {
+function renderCurrentBlock() {
   if (!quizContainer) return;
-  quizContainer.innerHTML = `<div class="pagination-indicator" style="margin-bottom:15px; font-weight:bold;">
-        Página ${currentPage}/${Math.ceil(
-    shuffledQuestions.length / questionsPerPage
-  )}</div>`;
+  
+  const currentBlock = shuffledBlocks[currentBlockIndex];
+  if (!currentBlock) return;
 
-  const startIdx = (currentPage - 1) * questionsPerPage;
-  const endIdx = Math.min(
-    startIdx + questionsPerPage,
-    shuffledQuestions.length
-  );
+  quizContainer.innerHTML = `
+    <div class="pagination-indicator" style="margin-bottom:10px; font-weight:bold;">
+      Bloque ${currentBlockIndex + 1}/${shuffledBlocks.length}
+    </div>
+    <div class="block-instructions" style="margin-bottom:20px; padding:15px; background:#f8f9fa; border-radius:8px; border-left:4px solid #1982C4;">
+      <strong>📋 Instrucciones:</strong> De las 4 opciones siguientes, selecciona <strong>👍 1 que MÁS te describe</strong> y <strong>👎 1 que MENOS te describe</strong>. No puedes seleccionar la misma opción para ambas.
+    </div>
+  `;
 
-  for (let i = startIdx; i < endIdx; i++) {
-    const question = shuffledQuestions[i];
-    const questionDiv = document.createElement("div");
-    questionDiv.className = "question ui-card";
-    questionDiv.id = `question-global-${i}`;
+  const blockDiv = document.createElement("div");
+  blockDiv.className = "disc-block ui-card";
+  blockDiv.id = `block-${currentBlockIndex}`;
+  blockDiv.style.marginBottom = "10px";
 
-    const questionText = document.createElement("div");
-    questionText.className = "question-text ui-card-title";
-    questionText.textContent = question.text;
-    questionDiv.appendChild(questionText);
+  // Crear opciones del bloque
+  currentBlock.options.forEach((option, optionIndex) => {
+    const optionDiv = document.createElement("div");
+    optionDiv.className = "block-option";
+    optionDiv.style.cssText = `
+      margin: 10px 0;
+      padding: 15px;
+      border: 2px solid #e1e5e9;
+      border-radius: 8px;
+      background: white;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+    `;
 
-    const optionsDiv = document.createElement("div");
-    optionsDiv.className = "options ui-options";
-    optionsDiv.style.display = "flex";
-    optionsDiv.style.alignItems = "center";
-    optionsDiv.style.justifyContent = "space-between";
-    optionsDiv.style.gap = "10px";
+    const optionText = document.createElement("div");
+    optionText.textContent = option.text;
+    optionText.style.cssText = `
+      font-size: 1rem;
+      line-height: 1.4;
+      color: #2d3748;
+    `;
 
-    // Texto al inicio: Nada identificado
-    const startLabel = document.createElement("span");
-    startLabel.textContent = "Nada identificado";
-    startLabel.style.fontSize = "0.9em";
-    startLabel.style.whiteSpace = "nowrap";
-    optionsDiv.appendChild(startLabel);
+    const selectionControls = document.createElement("div");
+    selectionControls.style.cssText = `
+      display: flex;
+      gap: 15px;
+      margin-top: 10px;
+      justify-content: center;
+    `;
 
-    for (let value = 1; value <= 5; value++) {
-      const label = document.createElement("label");
-      label.className = "ui-option-label";
-      label.style.display = "flex";
-      label.style.flexDirection = "column";
-      label.style.alignItems = "center";
-      label.style.position = "relative";
-      label.style.transition = "box-shadow 0.2s, border-color 0.2s";
+    const mostButton = document.createElement("button");
+    mostButton.innerHTML = "👍 MÁS me describe";
+    mostButton.className = "selection-btn most-btn";
+    mostButton.style.cssText = `
+      padding: 10px 18px;
+      border: 2px solid #22C55E;
+      background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%);
+      color: #16a34a;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.95em;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 4px rgba(34, 197, 94, 0.1);
+    `;
 
-      // Icono visual (puedes cambiar el emoji por SVG si lo prefieres)
-      const icon = document.createElement("span");
-      icon.className = "ui-option-icon";
-      icon.style.fontSize = "1.2em";
-      icon.style.marginBottom = "2px";
-      icon.textContent = value === 1 ? "😐" : value === 5 ? "😃" : "🙂";
-      label.appendChild(icon);
+    const leastButton = document.createElement("button");
+    leastButton.innerHTML = "👎 MENOS me describe";
+    leastButton.className = "selection-btn least-btn";
+    leastButton.style.cssText = `
+      padding: 10px 18px;
+      border: 2px solid #ef4444;
+      background: linear-gradient(135deg, #ffffff 0%, #fef2f2 100%);
+      color: #dc2626;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.95em;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 4px rgba(239, 68, 68, 0.1);
+    `;
 
-      const input = document.createElement("input");
-      input.type = "radio";
-      input.name = `question-${i}`;
-      input.value = value;
-      input.style.marginBottom = "4px";
+    // Efectos hover para los botones
+    mostButton.addEventListener('mouseenter', () => {
+      mostButton.style.transform = 'translateY(-2px)';
+      mostButton.style.boxShadow = '0 4px 8px rgba(34, 197, 94, 0.2)';
+      mostButton.style.background = 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)';
+      mostButton.style.color = '#16a34a';
+    });
+    
+    mostButton.addEventListener('mouseleave', () => {
+      mostButton.style.transform = 'translateY(0)';
+      mostButton.style.boxShadow = '0 2px 4px rgba(34, 197, 94, 0.1)';
+      mostButton.style.background = 'linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%)';
+      mostButton.style.color = '#16a34a';
+    });
 
-      if (userResponses[i] === value) {
-        input.checked = true;
-        label.style.background = "#e3f2fd";
-        label.style.boxShadow = "0 2px 8px rgba(63,81,181,0.08)";
-        label.style.borderColor = "#3f51b5";
+    leastButton.addEventListener('mouseenter', () => {
+      leastButton.style.transform = 'translateY(-2px)';
+      leastButton.style.boxShadow = '0 4px 8px rgba(239, 68, 68, 0.2)';
+      leastButton.style.background = 'linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)';
+      leastButton.style.color = '#dc2626';
+    });
+    
+    leastButton.addEventListener('mouseleave', () => {
+      leastButton.style.transform = 'translateY(0)';
+      leastButton.style.boxShadow = '0 2px 4px rgba(239, 68, 68, 0.1)';
+      leastButton.style.background = 'linear-gradient(135deg, #ffffff 0%, #fef2f2 100%)';
+      leastButton.style.color = '#dc2626';
+    });
+
+    // Efectos de clic para feedback visual inmediato
+    mostButton.addEventListener('mousedown', () => {
+      mostButton.style.setProperty('background-color', '#15803d', 'important'); // Verde más oscuro
+      mostButton.style.setProperty('color', 'white', 'important');
+      mostButton.style.transform = 'scale(0.98)';
+    });
+    
+    mostButton.addEventListener('mouseup', () => {
+      // Restaurar al estado correcto según si está seleccionado o no
+      const currentResponse = userResponses[currentBlockIndex];
+      if (currentResponse && currentResponse.most === optionIndex) {
+        mostButton.style.setProperty('background-color', 'transparent', 'important');
+        mostButton.style.setProperty('color', '#3f51b5', 'important');
+      } else {
+        mostButton.style.setProperty('background-color', 'transparent', 'important');
+        mostButton.style.setProperty('color', '#16a34a', 'important');
       }
+      mostButton.style.transform = 'scale(1)';
+    });
+    
+    mostButton.addEventListener('mouseleave', () => {
+      // Restaurar al estado correcto según si está seleccionado o no
+      const currentResponse = userResponses[currentBlockIndex];
+      if (currentResponse && currentResponse.most === optionIndex) {
+        mostButton.style.setProperty('background-color', 'transparent', 'important');
+        mostButton.style.setProperty('color', '#3f51b5', 'important');
+      } else {
+        mostButton.style.setProperty('background-color', 'transparent', 'important');
+        mostButton.style.setProperty('color', '#16a34a', 'important');
+      }
+      mostButton.style.transform = 'scale(1)';
+    });
 
-      input.addEventListener("change", () => {
-        userResponses[i] = parseInt(input.value);
-        // Animación y feedback visual
-        document.querySelectorAll(`[name='question-${i}']`).forEach((el) => {
-          el.parentElement.style.background = "#fff";
-          el.parentElement.style.boxShadow = "none";
-          el.parentElement.style.borderColor = "#ccc";
-        });
-        label.style.background = "#e3f2fd";
-        label.style.boxShadow = "0 2px 8px rgba(63,81,181,0.08)";
-        label.style.borderColor = "#3f51b5";
-        hideAlert();
-        updateSubmitButtonVisibility();
-      });
+    leastButton.addEventListener('mousedown', () => {
+      leastButton.style.setProperty('background-color', '#b91c1c', 'important'); // Rojo más oscuro
+      leastButton.style.setProperty('color', 'white', 'important');
+      leastButton.style.transform = 'scale(0.98)';
+    });
+    
+    leastButton.addEventListener('mouseup', () => {
+      // Restaurar al estado correcto según si está seleccionado o no
+      const currentResponse = userResponses[currentBlockIndex];
+      if (currentResponse && currentResponse.least === optionIndex) {
+        leastButton.style.setProperty('background-color', 'transparent', 'important');
+        leastButton.style.setProperty('color', '#3f51b5', 'important');
+      } else {
+        leastButton.style.setProperty('background-color', 'transparent', 'important');
+        leastButton.style.setProperty('color', '#dc2626', 'important');
+      }
+      leastButton.style.transform = 'scale(1)';
+    });
+    
+    leastButton.addEventListener('mouseleave', () => {
+      // Restaurar al estado correcto según si está seleccionado o no
+      const currentResponse = userResponses[currentBlockIndex];
+      if (currentResponse && currentResponse.least === optionIndex) {
+        leastButton.style.setProperty('background-color', 'transparent', 'important');
+        leastButton.style.setProperty('color', '#3f51b5', 'important');
+      } else {
+        leastButton.style.setProperty('background-color', 'transparent', 'important');
+        leastButton.style.setProperty('color', '#dc2626', 'important');
+      }
+      leastButton.style.transform = 'scale(1)';
+    });
 
-      const span = document.createElement("span");
-      span.textContent = value;
-      span.style.fontWeight = "bold";
-      label.appendChild(input);
-      label.appendChild(span);
-      optionsDiv.appendChild(label);
-    }
+    // Event listeners para los botones
+    mostButton.addEventListener('click', () => {
+      selectOption(currentBlockIndex, optionIndex, 'most', option.dimension);
+    });
 
-    const endLabel = document.createElement("span");
-    endLabel.textContent = "Muy identificado";
-    endLabel.style.fontSize = "0.9em";
-    endLabel.style.whiteSpace = "nowrap";
-    optionsDiv.appendChild(endLabel);
+    leastButton.addEventListener('click', () => {
+      selectOption(currentBlockIndex, optionIndex, 'least', option.dimension);
+    });
 
-    questionDiv.appendChild(optionsDiv);
-    quizContainer.appendChild(questionDiv);
+    selectionControls.appendChild(mostButton);
+    selectionControls.appendChild(leastButton);
+    optionDiv.appendChild(optionText);
+    optionDiv.appendChild(selectionControls);
+    blockDiv.appendChild(optionDiv);
+  });
+
+  quizContainer.appendChild(blockDiv);
+}
+
+// Función para verificar si el bloque actual está completado
+function isCurrentBlockCompleted() {
+  const currentResponse = userResponses[currentBlockIndex];
+  return currentResponse && 
+         currentResponse.most !== null && 
+         currentResponse.least !== null;
+}
+
+// Función para manejar la selección de opciones MOST/LEAST
+function selectOption(blockIndex, optionIndex, selectionType, dimension) {
+  if (!userResponses[blockIndex]) {
+    userResponses[blockIndex] = { most: null, least: null };
   }
-  // Indicador inferior (footer)
-  const footer = document.createElement("div");
-  footer.className = "pagination-indicator";
-  footer.style.marginTop = "15px";
-  footer.style.fontWeight = "bold";
-  footer.style.textAlign = "center"; // opcional
-  footer.textContent = `Página ${currentPage}/${Math.ceil(
-    shuffledQuestions.length / questionsPerPage
-  )}`;
-  quizContainer.appendChild(footer);
+
+  // Verificar si ya se seleccionó la misma opción para el otro tipo
+  const currentResponse = userResponses[blockIndex];
+  if (selectionType === 'most' && currentResponse.least === optionIndex) {
+    showAlert('No puedes seleccionar la misma opción para MÁS y MENOS');
+    return;
+  }
+  if (selectionType === 'least' && currentResponse.most === optionIndex) {
+    showAlert('No puedes seleccionar la misma opción para MÁS y MENOS');
+    return;
+  }
+
+  // Actualizar la selección
+  userResponses[blockIndex][selectionType] = optionIndex;
+  userResponses[blockIndex][`${selectionType}Dimension`] = dimension;
+
+  // Actualizar la interfaz visual
+  updateBlockVisuals(blockIndex);
+  
+  // Verificar si el bloque está completo
+  if (userResponses[blockIndex].most !== null && userResponses[blockIndex].least !== null) {
+    console.log(`Bloque ${blockIndex + 1} completado:`, userResponses[blockIndex]);
+  }
+}
+
+// Función para actualizar los estilos visuales del bloque
+function updateBlockVisuals(blockIndex) {
+  const blockDiv = document.getElementById(`block-${blockIndex}`);
+  if (!blockDiv) return;
+
+  const currentResponse = userResponses[blockIndex];
+  const options = blockDiv.querySelectorAll('.block-option');
+
+  options.forEach((optionDiv, optionIndex) => {
+    const mostBtn = optionDiv.querySelector('.most-btn');
+    const leastBtn = optionDiv.querySelector('.least-btn');
+
+    // Resetear estilos
+    optionDiv.style.borderColor = '#e1e5e9';
+    optionDiv.style.backgroundColor = 'white';
+    mostBtn.style.setProperty('background-color', 'transparent', 'important');
+    mostBtn.style.setProperty('color', '#16a34a', 'important');
+    mostBtn.style.setProperty('border-color', '#22C55E', 'important');
+    mostBtn.style.setProperty('box-shadow', '0 2px 4px rgba(34, 197, 94, 0.1)', 'important');
+    leastBtn.style.setProperty('background-color', 'transparent', 'important');
+    leastBtn.style.setProperty('color', '#dc2626', 'important');
+    leastBtn.style.setProperty('border-color', '#ef4444', 'important');
+    leastBtn.style.setProperty('box-shadow', '0 2px 4px rgba(239, 68, 68, 0.1)', 'important');
+
+    // Aplicar estilos según selección
+    if (currentResponse.most === optionIndex) {
+      optionDiv.style.borderColor = '#3f51b5';
+      optionDiv.style.backgroundColor = '#f3f4f6';
+      mostBtn.style.setProperty('background-color', 'transparent', 'important');
+      mostBtn.style.setProperty('color', '#3f51b5', 'important');
+      mostBtn.style.setProperty('border-color', '#3f51b5', 'important');
+      mostBtn.style.setProperty('box-shadow', '0 4px 8px rgba(63, 81, 181, 0.3)', 'important');
+    }
+    if (currentResponse.least === optionIndex) {
+      optionDiv.style.borderColor = '#3f51b5';
+      optionDiv.style.backgroundColor = '#f3f4f6';
+      leastBtn.style.setProperty('background-color', 'transparent', 'important');
+      leastBtn.style.setProperty('color', '#3f51b5', 'important');
+      leastBtn.style.setProperty('border-color', '#3f51b5', 'important');
+      leastBtn.style.setProperty('box-shadow', '0 4px 8px rgba(63, 81, 181, 0.3)', 'important');
+    }
+  });
 }
 
 function updatePaginationButtons() {
@@ -914,11 +1297,11 @@ function updatePaginationButtons() {
   
   if (!prevBtn || !nextBtn || !submitBtn) return;
 
-  const totalPages = Math.ceil(shuffledQuestions.length / questionsPerPage);
-  prevBtn.disabled = currentPage === 1;
+  const totalBlocks = shuffledBlocks.length;
+  prevBtn.disabled = currentBlockIndex === 0;
 
   // Mostrar u ocultar el botón "Siguiente"
-  if (currentPage === totalPages) {
+  if (currentBlockIndex === totalBlocks - 1) {
     nextBtn.style.display = "none";
     submitBtn.style.display = "block";
     // Alinear los botones en la última página
@@ -986,36 +1369,31 @@ function updateSubmitButtonVisibility() {
 }
 
 function calculateScores() {
-  if (userResponses.length !== shuffledQuestions.length) {
+  if (userResponses.length !== shuffledBlocks.length) {
     console.error(
-      `Longitud de respuestas (${userResponses.length}) no coincide con preguntas (${shuffledQuestions.length})`
+      `Longitud de respuestas (${userResponses.length}) no coincide con bloques (${shuffledBlocks.length})`
     );
     showAlert("Error al procesar respuestas. Intenta recargar la página.");
     return null;
   }
   
-  if (!areAllQuestionsAnswered()) {
-    // Encontrar la primera pregunta sin responder
+  if (!areAllBlocksCompleted()) {
+    // Encontrar el primer bloque sin completar
     for (let i = 0; i < userResponses.length; i++) {
-      if (userResponses[i] === null) {
-        const pageOfMissingQuestion = Math.floor(i / questionsPerPage) + 1;
-        currentPage = pageOfMissingQuestion;
-        renderCurrentPage();
+      if (!userResponses[i] || userResponses[i].most === null || userResponses[i].least === null) {
+        currentBlockIndex = i;
+        renderCurrentBlock();
         updatePaginationButtons();
         setTimeout(() => {
-          const missingQuestionDiv = document.querySelector(
-            `#question-global-${i}`
-          );
-          if (missingQuestionDiv) {
-            missingQuestionDiv.style.borderColor = "red";
-            missingQuestionDiv.scrollIntoView({
+          const missingBlockDiv = document.querySelector(`#block-${i}`);
+          if (missingBlockDiv) {
+            missingBlockDiv.style.borderColor = "red";
+            missingBlockDiv.scrollIntoView({
               behavior: "smooth",
               block: "center",
             });
           }
-          showAlert(
-            "Aún faltan preguntas por responder. Por favor, completa todas."
-          );
+          showAlert("Aún faltan bloques por completar. Por favor, completa todos.");
         }, 100);
         return null;
       }
@@ -1024,22 +1402,46 @@ function calculateScores() {
   
   hideAlert();
 
-  const scores = Array(numTypes).fill(0);
-  userResponses.forEach((responseValue, globalIndex) => {
-    if (
-      shuffledQuestions[globalIndex] &&
-      typeof shuffledQuestions[globalIndex].type !== "undefined"
-    ) {
-      const originalType = shuffledQuestions[globalIndex].type;
-      // En DISC, los tipos van directamente del 1 al 4
-      scores[originalType - 1] += responseValue;
-    } else {
-      console.error(
-        `Pregunta indefinida o sin tipo en el índice global ${globalIndex}`
-      );
+  // Sistema de puntuación ipsativo MOST/LEAST
+  const rawScores = { D: 0, I: 0, S: 0, C: 0 };
+  
+  userResponses.forEach((response, blockIndex) => {
+    if (response && response.most !== null && response.least !== null) {
+      // +1 para la dimensión seleccionada como MOST
+      const mostDimension = response.mostDimension;
+      rawScores[mostDimension]++;
+      
+      // -1 para la dimensión seleccionada como LEAST
+      const leastDimension = response.leastDimension;
+      rawScores[leastDimension]--;
     }
   });
+
+  // Convertir scores ipsativos a porcentajes sobre 100 (sin negativos)
+  // Rango típico: [-28, +28] -> [0, 100]
+  const normalizedScores = {
+    D: Math.max(0, Math.min(100, ((rawScores.D + 28) / 56) * 100)),
+    I: Math.max(0, Math.min(100, ((rawScores.I + 28) / 56) * 100)),
+    S: Math.max(0, Math.min(100, ((rawScores.S + 28) / 56) * 100)),
+    C: Math.max(0, Math.min(100, ((rawScores.C + 28) / 56) * 100))
+  };
+
+  // Convertir a array en orden D, I, S, C
+  const scores = [normalizedScores.D, normalizedScores.I, normalizedScores.S, normalizedScores.C];
+  
+  console.log("Raw scores (ipsativo):", rawScores);
+  console.log("Scores normalizados (0-100):", normalizedScores);
+  console.log("Scores finales:", scores);
   return scores;
+}
+
+// Función para verificar si todos los bloques están completados
+function areAllBlocksCompleted() {
+  return userResponses.every(response => 
+    response && 
+    response.most !== null && 
+    response.least !== null
+  );
 }
 
 function displayResults(scores) {
@@ -1052,162 +1454,312 @@ function displayResults(scores) {
   )
     return;
 
-  // Mostrar los resultados directamente ya que el loader se maneja externamente
+  // Ocultar el formulario del quiz y mostrar resultados
+  quizForm.style.display = "none";
+  paginationControlsDiv.style.display = "none";
+  submitBtn.style.display = "none";
+  
+  // Mostrar el contenedor de resultados
   resultsContainer.style.display = "block";
-
-    const maxScore = Math.max(...scores);
-    const dominantTypeIndex = scores.indexOf(maxScore);
-    const dominantType = dominantTypeIndex + 1;
-
-  // Obtener el color del tipo dominante
-  const dominantColor = typeColors[dominantTypeIndex];
   
-  // Debug: verificar valores
-  console.log('=== DEBUG DISC RESULTS ===');
-  console.log('Scores array:', scores);
-  console.log('Max Score:', maxScore);
-  console.log('Dominant Type Index:', dominantTypeIndex);
-  console.log('Type Labels:', typeLabels);
-  console.log('Type Colors:', typeColors);
-  console.log('Selected Type:', typeLabels[dominantTypeIndex]);
-  console.log('Selected Color:', typeColors[dominantTypeIndex]);
-  console.log('Expected colors:');
-  console.log('- Dominancia (index 0):', typeColors[0], '(should be red)');
-  console.log('- Influencia (index 1):', typeColors[1], '(should be yellow)');
-  console.log('- Estabilidad (index 2):', typeColors[2], '(should be green)');
-  console.log('- Cumplimiento (index 3):', typeColors[3], '(should be blue)');
-  console.log('========================');
+  console.log("Mostrando resultados:", {
+    resultsContainer: resultsContainer,
+    resultsTextDiv: resultsTextDiv,
+    scores: scores
+  });
   
-    // Determinar la clase CSS basada en el tipo
-    let discClass = '';
-    if (typeLabels[dominantTypeIndex] === 'Dominancia') {
-      discClass = 'disc-result-dominancia';
-    } else if (typeLabels[dominantTypeIndex] === 'Influencia') {
-      discClass = 'disc-result-influencia';
-    } else if (typeLabels[dominantTypeIndex] === 'Estabilidad') {
-      discClass = 'disc-result-estabilidad';
-    } else if (typeLabels[dominantTypeIndex] === 'Cumplimiento') {
-      discClass = 'disc-result-cumplimiento';
+  // Calcular el tipo dominante
+  const maxScore = Math.max(...scores);
+  const dominantTypeIndex = scores.indexOf(maxScore);
+  const dominantTypeName = typeLabels[dominantTypeIndex];
+  
+  // Definir descripciones detalladas para cada tipo
+  const typeDescriptions = {
+    'Dominancia': {
+      title: 'Dominancia',
+      description: 'Eres una persona orientada a resultados, directa y decidida. Te caracterizas por tu capacidad de liderazgo natural, tu enfoque en objetivos claros y tu habilidad para tomar decisiones rápidas bajo presión.',
+      strengths: ['Liderazgo natural', 'Orientación a resultados', 'Toma de decisiones', 'Superación de obstáculos'],
+      workStyle: 'Prefieres entornos dinámicos donde puedas ejercer control y autoridad. Te motiva superar desafíos y alcanzar metas ambiciosas.'
+    },
+    'Influencia': {
+      title: 'Influencia',
+      description: 'Eres una persona sociable, persuasiva y optimista. Te caracterizas por tu capacidad de motivar a otros, tu facilidad para comunicar ideas y tu enfoque en las relaciones interpersonales.',
+      strengths: ['Comunicación efectiva', 'Motivación de equipos', 'Construcción de relaciones', 'Pensamiento positivo'],
+      workStyle: 'Prefieres entornos colaborativos donde puedas interactuar con personas y trabajar en equipo. Te motiva el reconocimiento y la conexión con otros.'
+    },
+    'Serenidad': {
+      title: 'Serenidad',
+      description: 'Eres una persona paciente, confiable y cooperativa. Te caracterizas por tu capacidad de mantener la calma, tu enfoque en la estabilidad y tu habilidad para apoyar a otros de manera constante.',
+      strengths: ['Paciencia y tolerancia', 'Apoyo constante', 'Mantenimiento de armonía', 'Confiabilidad'],
+      workStyle: 'Prefieres entornos estables y predecibles donde puedas contribuir de manera consistente. Te motiva la seguridad y el bienestar del equipo.'
+    },
+    'Cumplimiento': {
+      title: 'Cumplimiento',
+      description: 'Eres una persona analítica, meticulosa y orientada a la calidad. Te caracterizas por tu capacidad de atención al detalle, tu enfoque en la precisión y tu habilidad para seguir procedimientos establecidos.',
+      strengths: ['Análisis detallado', 'Precisión y exactitud', 'Seguimiento de procedimientos', 'Control de calidad'],
+      workStyle: 'Prefieres entornos estructurados donde puedas aplicar metodologías probadas. Te motiva la excelencia y la mejora continua.'
     }
+  };
 
-    console.log('Using CSS class:', discClass, 'for type:', typeLabels[dominantTypeIndex]);
-
-    resultsTextDiv.innerHTML = `<p class="dominant-type" style="color: #2d3748; font-weight: 600;">Tu estilo DISC predominante es: <span class="${discClass}">${typeLabels[dominantTypeIndex]}</span></p>`;
-
-    drawChart(scores, dominantTypeIndex);
-
-    paginationControlsDiv.style.display = "none";
-    submitBtn.style.display = "none";
-    quizForm.style.display = "none";
-
-    if (typeDescriptions && typeDescriptions.length > 0) {
-      typeDescriptions.forEach((desc) => (desc.style.display = "none"));
-
-      const dominantTypeDesc = document.querySelector(`#type-${dominantType}`);
-      if (dominantTypeDesc) {
-        dominantTypeDesc.style.display = "block";
-        dominantTypeDesc.scrollIntoView({ behavior: "smooth" });
-      }
-    } else {
-      console.warn(
-        "No se encontraron descripciones de tipos para mostrar/ocultar"
-      );
+  // Definir características laborales
+  const workCharacteristics = {
+    'Dominancia': [
+      'Liderazgo natural y toma de decisiones',
+      'Orientación a resultados y objetivos',
+      'Capacidad de superar obstáculos',
+      'Iniciativa y proactividad'
+    ],
+    'Influencia': [
+      'Comunicación efectiva y persuasiva',
+      'Motivación y entusiasmo',
+      'Construcción de relaciones',
+      'Pensamiento positivo y optimista'
+    ],
+    'Serenidad': [
+      'Paciencia y tolerancia',
+      'Apoyo constante al equipo',
+      'Mantenimiento de armonía',
+      'Confiabilidad y estabilidad'
+    ],
+    'Cumplimiento': [
+      'Análisis detallado y preciso',
+      'Seguimiento de procedimientos',
+      'Control de calidad',
+      'Precisión y exactitud'
+    ]
+  };
+  
+  // Obtener información del tipo dominante
+  const dominantInfo = typeDescriptions[dominantTypeName];
+  
+  // Calcular dimensiones altas (mayores a 60)
+  const highDimensions = [];
+  scores.forEach((score, index) => {
+    if (score > 60) {
+      highDimensions.push(typeLabels[index].charAt(0));
     }
+  });
 
-    confetti({
-      particleCount: 100,
-      spread: 70,
-      origin: { y: 0.6 },
-    });
+  // Definir características clave basadas en el perfil
+  const keyCharacteristics = {
+    'Dominancia': [
+      'Aporta un enfoque directo y orientado a resultados.',
+      'Brinda liderazgo natural y toma de decisiones rápida.',
+      'Promueve la superación de obstáculos y desafíos.',
+      'Realiza acciones inmediatas para alcanzar objetivos.',
+      'Valora el control y la autoridad en el trabajo.'
+    ],
+    'Influencia': [
+      'Aporta un enfoque sociable y motivador.',
+      'Brinda comunicación efectiva y persuasiva.',
+      'Promueve la construcción de relaciones positivas.',
+      'Realiza actividades de networking y colaboración.',
+      'Valora el reconocimiento y la conexión interpersonal.'
+    ],
+    'Serenidad': [
+      'Aporta un enfoque paciente y cooperativo.',
+      'Brinda estabilidad y apoyo constante al equipo.',
+      'Promueve la armonía y el trabajo en equipo.',
+      'Realiza tareas de manera consistente y confiable.',
+      'Valora un ambiente estable y predecible.'
+    ],
+    'Cumplimiento': [
+      'Aporta un enfoque metódico y detallista.',
+      'Brinda un alto nivel de precisión y calidad.',
+      'Promueve el cumplimiento de normas y procesos.',
+      'Realiza análisis exhaustivos antes de actuar.',
+      'Valora un ambiente estable y bien definido.'
+    ]
+  };
 
-    resultsTextDiv.innerHTML += `
-            <p style="color:#2ecc71;font-weight:bold;margin-top:15px;">
-                ¡Qué lindo ser quien eres! ¡Celebra tu tipo de comportamiento único! 🎉
-            </p>
-            <div class="final-message" style="margin-top:20px;font-size:1.1em;">
-                Ahora que conoces tu tipo, aprovecha estas características únicas para seguir creciendo y desarrollándote. ¡El mundo necesita exactamente quién eres!
+  // Definir sliders de comportamiento
+  const behaviorSliders = {
+    'Dominancia': [
+      { left: 'Más idealista', right: 'Más pragmático', position: 25 },
+      { left: 'Enfoque en detalles', right: 'Visión global', position: 75 },
+      { left: 'Orientado a resultados rápidos', right: 'Más orientado a procesos', position: 20 },
+      { left: 'Más proactivo', right: 'Más reactivo', position: 15 },
+      { left: 'Más innovación', right: 'Más rutina', position: 30 },
+      { left: 'Más tolerante a la ambigüedad', right: 'Más necesidad de claridad', position: 35 },
+      { left: 'Más analítico', right: 'Más intuitivo', position: 40 },
+      { left: 'Más tolerante al riesgo', right: 'Más adverso al riesgo', position: 25 },
+      { left: 'Enfoque en el equipo', right: 'Enfoque en tareas', position: 80 }
+    ],
+    'Influencia': [
+      { left: 'Más idealista', right: 'Más pragmático', position: 30 },
+      { left: 'Enfoque en detalles', right: 'Visión global', position: 85 },
+      { left: 'Orientado a resultados rápidos', right: 'Más orientado a procesos', position: 15 },
+      { left: 'Más proactivo', right: 'Más reactivo', position: 20 },
+      { left: 'Más innovación', right: 'Más rutina', position: 25 },
+      { left: 'Más tolerante a la ambigüedad', right: 'Más necesidad de claridad', position: 40 },
+      { left: 'Más analítico', right: 'Más intuitivo', position: 30 },
+      { left: 'Más tolerante al riesgo', right: 'Más adverso al riesgo', position: 35 },
+      { left: 'Enfoque en el equipo', right: 'Enfoque en tareas', position: 20 }
+    ],
+    'Serenidad': [
+      { left: 'Más idealista', right: 'Más pragmático', position: 60 },
+      { left: 'Enfoque en detalles', right: 'Visión global', position: 45 },
+      { left: 'Orientado a resultados rápidos', right: 'Más orientado a procesos', position: 70 },
+      { left: 'Más proactivo', right: 'Más reactivo', position: 60 },
+      { left: 'Más innovación', right: 'Más rutina', position: 75 },
+      { left: 'Más tolerante a la ambigüedad', right: 'Más necesidad de claridad', position: 55 },
+      { left: 'Más analítico', right: 'Más intuitivo', position: 50 },
+      { left: 'Más tolerante al riesgo', right: 'Más adverso al riesgo', position: 65 },
+      { left: 'Enfoque en el equipo', right: 'Enfoque en tareas', position: 30 }
+    ],
+    'Cumplimiento': [
+      { left: 'Más idealista', right: 'Más pragmático', position: 80 },
+      { left: 'Enfoque en detalles', right: 'Visión global', position: 15 },
+      { left: 'Orientado a resultados rápidos', right: 'Más orientado a procesos', position: 85 },
+      { left: 'Más proactivo', right: 'Más reactivo', position: 70 },
+      { left: 'Más innovación', right: 'Más rutina', position: 90 },
+      { left: 'Más tolerante a la ambigüedad', right: 'Más necesidad de claridad', position: 85 },
+      { left: 'Más analítico', right: 'Más intuitivo', position: 90 },
+      { left: 'Más tolerante al riesgo', right: 'Más adverso al riesgo', position: 85 },
+      { left: 'Enfoque en el equipo', right: 'Enfoque en tareas', position: 80 }
+    ]
+  };
+
+  // Crear HTML estilo MiPerfilDISC
+  const simpleHTML = `
+    <div style="max-width: 1000px; margin: 0 auto; padding: 20px; background: #ffffff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+      
+      <!-- Header -->
+      <div style="text-align: center; margin-bottom: 30px;">
+        <div style="background: linear-gradient(135deg, ${typeColors[dominantTypeIndex]}, ${typeColors[dominantTypeIndex]}dd); color: white; padding: 15px 30px; border-radius: 12px; display: inline-block; font-weight: 800; font-size: 1.2em; letter-spacing: 1px;">
+          ${dominantInfo.title.toUpperCase()} | ${dominantInfo.strengths.slice(0, 2).join(' | ').toUpperCase()}
+        </div>
+      </div>
+
+      <!-- Contenido principal en dos columnas -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px;">
+        
+        <!-- Columna izquierda: Gráfico -->
+        <div style="background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+          <h3 style="color: #1f2937; margin-bottom: 20px; font-size: 1.3em; text-align: center;">Nivel de intensidad</h3>
+          
+          <!-- Gráfico simplificado -->
+          <div style="height: 300px; background: #f8fafc; border-radius: 8px; padding: 20px; display: flex; align-items: end; justify-content: space-around; position: relative;">
+            ${scores.map((score, index) => `
+              <div style="display: flex; flex-direction: column; align-items: center; flex: 1; position: relative;">
+                <!-- Barra -->
+                <div style="width: 50px; height: ${Math.min((score / 100) * 200, 200)}px; background: linear-gradient(to top, ${typeColors[index]}, ${typeColors[index]}dd); border-radius: 6px 6px 0 0; margin-bottom: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.15); transition: transform 0.2s ease; max-height: 200px;"></div>
+                <!-- Etiqueta de la dimensión -->
+                <div style="font-weight: 800; color: ${typeColors[index]}; font-size: 1.4em; margin-bottom: 8px; text-shadow: 0 1px 2px rgba(0,0,0,0.1);">${typeLabels[index].charAt(0)}</div>
+                <!-- Puntaje -->
+                <div style="font-size: 1em; color: #374151; font-weight: 700; background: white; padding: 4px 8px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">${Math.round(score)}</div>
+              </div>
+            `).join('')}
+          </div>
+          
+          <!-- Dimensiones altas -->
+          <div style="text-align: center; margin-top: 20px; font-weight: 600; color: #1f2937; font-size: 1.1em;">
+            Dimensiones altas: ${highDimensions.join('')}
+          </div>
+        </div>
+
+        <!-- Columna derecha: Características clave -->
+        <div style="background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+          <h3 style="color: #1f2937; margin-bottom: 20px; font-size: 1.3em;">Características clave</h3>
+          <ul style="list-style: none; padding: 0; margin: 0;">
+            ${keyCharacteristics[dominantTypeName].map(char => `
+              <li style="margin-bottom: 12px; padding-left: 20px; position: relative; color: #374151; line-height: 1.5;">
+                <span style="position: absolute; left: 0; top: 6px; width: 6px; height: 6px; background: ${typeColors[dominantTypeIndex]}; border-radius: 50%;"></span>
+                ${char}
+              </li>
+            `).join('')}
+          </ul>
+        </div>
+      </div>
+
+      <!-- Sliders de comportamiento -->
+      <div style="background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+        <h3 style="color: #1f2937; margin-bottom: 25px; font-size: 1.3em; text-align: center;">Perfil de comportamiento</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+          ${behaviorSliders[dominantTypeName].map(slider => `
+            <div style="margin-bottom: 20px;">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.9em; color: #6b7280;">
+                <span>${slider.left}</span>
+                <span>${slider.right}</span>
+              </div>
+              <div style="position: relative; height: 6px; background: #e5e7eb; border-radius: 3px;">
+                <div style="position: absolute; left: ${slider.position}%; top: -3px; width: 12px; height: 12px; background: #000; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3); transform: translateX(-50%);"></div>
+              </div>
             </div>
-        `;
+          `).join('')}
+        </div>
+      </div>
 
-    resultsContainer.scrollIntoView({ behavior: "smooth" });
+      <!-- Nota de transparencia -->
+      <div style="padding: 20px; background: #f8f9fa; border-left: 4px solid #6c757d; border-radius: 8px; font-size: 0.9em; color: #6c757d; margin-top: 25px;">
+        <strong>⚠️ Nota de transparencia:</strong> Esta evaluación es orientativa y no reemplaza instrumentos clínicos ni procesos de selección especializados; es una herramienta orientativa sin pretensión diagnóstica.
+      </div>
+    </div>
+  `;
+  
+  resultsTextDiv.innerHTML = simpleHTML;
+  
+  console.log("HTML asignado:", {
+    resultsTextDiv: resultsTextDiv,
+    innerHTML: resultsTextDiv.innerHTML.substring(0, 200) + "..."
+  });
+  
+  // Scroll suave hacia los resultados
+  setTimeout(() => {
+    resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 100);
 }
 
-function drawChart(scores, dominantTypeIndex) {
-  const chartCanvas = document.querySelector("#results-chart");
-  if (!chartCanvas) return;
-  const chartCtx = chartCanvas.getContext("2d");
-  if (resultsChart) resultsChart.destroy();
-
-  let questionsPerType = 0;
-  if (shuffledQuestions.length > 0) {
-    questionsPerType = shuffledQuestions.filter((q) => q.type === 1).length;
-  }
-  const maxScorePerType = questionsPerType * 5;
-
-  // Mostrar todos los colores, pero destacar el dominante
-  const backgroundColors = [...typeColors];
-  const borderColors = [...typeColors];
+function updatePaginationButtons() {
+  const prevBtn = document.getElementById('prev-btn');
+  const nextBtn = document.getElementById('next-btn');
   
-  // Hacer el tipo dominante más opaco y los otros más transparentes
-  for (let i = 0; i < numTypes; i++) {
-    if (i === dominantTypeIndex) {
-      backgroundColors[i] = typeColors[i];
-    } else {
-      // Hacer los otros tipos más transparentes
-      backgroundColors[i] = typeColors[i] + '80'; // 50% opacity
-    }
-  }
+  if (!prevBtn || !nextBtn || !submitBtn) return;
 
-  // Configuración del gráfico de barras
-  resultsChart = new Chart(chartCtx, {
-    type: "bar", // Cambiado a gráfico de barras
-    data: {
-      labels: typeLabels,
-      datasets: [
-        {
-          label: "Puntuación",
-          data: scores,
-          backgroundColor: backgroundColors,
-          borderColor: borderColors,
-          borderWidth: 3,
-        },
-      ],
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      scales: {
-        y: {
-          beginAtZero: true,
-          suggestedMax: maxScorePerType > 0 ? maxScorePerType : 40,
-          ticks: {
-            stepSize: 5
-          }
-        },
-        x: {
-          ticks: {
-            font: { size: 14, weight: "bold" }
-          }
-        }
-      },
-      plugins: {
-        legend: {
-          display: false, // Ocultar la leyenda
-        },
-        tooltip: {
-          enabled: true,
-          callbacks: {
-            label: function(context) {
-              return `${context.label}: ${context.parsed.y} puntos`;
-            }
-          }
-        },
-      },
-      layout: {
-        padding: 20,
-      },
-    },
-  });
+  const totalBlocks = shuffledBlocks.length;
+  prevBtn.disabled = currentBlockIndex === 0;
+
+  // Mostrar u ocultar el botón "Siguiente" y "Ver resultados"
+  if (currentBlockIndex === totalBlocks - 1) {
+    // Última pregunta: ocultar "Siguiente" y mostrar "Ver resultados"
+    nextBtn.style.display = "none";
+    submitBtn.style.display = "block";
+    
+    // Alinear los botones en la última página
+    const pagBtnsWrapper = paginationControlsDiv.querySelector("div");
+    if (pagBtnsWrapper && !pagBtnsWrapper.querySelector("#submit-btn")) {
+      pagBtnsWrapper.innerHTML = "";
+      pagBtnsWrapper.appendChild(prevBtn);
+      pagBtnsWrapper.appendChild(submitBtn);
+      prevBtn.style.display = "inline-block";
+      submitBtn.style.display = "inline-block";
+    }
+  } else {
+    // No es la última pregunta: mostrar "Siguiente" y ocultar "Ver resultados"
+    nextBtn.style.display = "inline-block";
+    submitBtn.style.display = "none";
+  }
+}
+
+// Función para mostrar alertas
+function showAlert(message) {
+  if (!alertMessageDiv) return;
+  alertMessageDiv.textContent = message;
+  alertMessageDiv.style.display = "block";
+  alertMessageDiv.style.background = "#ffeaea";
+  alertMessageDiv.style.color = "#e74c3c";
+  alertMessageDiv.style.border = "1px solid #e74c3c";
+  alertMessageDiv.style.padding = "10px";
+  alertMessageDiv.style.borderRadius = "6px";
+  alertMessageDiv.style.margin = "10px auto";
+  alertMessageDiv.style.maxWidth = "350px";
+  alertMessageDiv.style.textAlign = "center";
+  alertMessageDiv.style.fontWeight = "500";
+}
+
+function hideAlert() {
+  if (!alertMessageDiv) return;
+  alertMessageDiv.style.display = "none";
 }
 
 function showAlert(message) {
@@ -1266,8 +1818,8 @@ if (restartTestBtn) {
       typeDescriptions.forEach((desc) => (desc.style.display = "none"));
     }
 
-    currentPage = 1;
-    shuffledQuestions = [];
+    currentBlockIndex = 0;
+    shuffledBlocks = [];
     userResponses = [];
     if (resultsChart) {
       resultsChart.destroy();
@@ -1369,6 +1921,27 @@ function hideWhatsAppLoader() {
   const loader = document.getElementById('whatsapp-loader');
   if (loader) {
     loader.remove();
+  }
+}
+
+// Función para actualizar Firestore con el email y preferencia de promociones
+async function updateFirestoreWithEmail(email, acceptsPromotions) {
+  if (!firebaseAvailable || !firestoreDocRef) {
+    console.log('Firebase no disponible o documento no creado');
+    return false;
+  }
+  
+  try {
+    await firestoreDocRef.update({ 
+      email: email,
+      acepta_promociones: acceptsPromotions,
+      email_timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    console.log('✓ Email y preferencia de promociones guardados en Firestore');
+    return true;
+  } catch (error) {
+    console.error('Error guardando email:', error);
+    return false;
   }
 }
 
@@ -1581,13 +2154,24 @@ if (submitBtn) {
         tipo: (dominantTypeIndex + 1).toString(),
         puntaje: maxScore,
         descripcion: obtenerDescripcionTipo(dominantTypeIndex + 1),
+        puntuaciones: {
+          D: Math.round(scores[0]),
+          I: Math.round(scores[1]), 
+          S: Math.round(scores[2]),
+          C: Math.round(scores[3])
+        }
       };
       
       // Preparar respuestas para guardado
       const respuestasObj = {};
       userResponses.forEach((resp, idx) => {
-        if (resp !== null) {
-          respuestasObj[`p${idx + 1}`] = resp.toString();
+        if (resp !== null && resp.most !== null && resp.least !== null) {
+          respuestasObj[`p${idx + 1}`] = {
+            most: resp.most,
+            least: resp.least,
+            mostDimension: resp.mostDimension,
+            leastDimension: resp.leastDimension
+          };
         }
       });
       
@@ -1608,7 +2192,7 @@ if (submitBtn) {
       // Simular tiempo de procesamiento para mostrar el loader
       setTimeout(() => {
         hideResultsLoader();
-        displayResults(scores);
+      displayResults(scores);
       }, 2000);
     }
   });

@@ -33,10 +33,10 @@ body::before {
 
 #eneagram-test-wrapper .container {
   max-width: 900px;
-  margin: 20px auto;
+  margin: 10px auto;
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(20px);
-  padding: 40px;
+  padding: 20px 40px 40px 40px;
   border-radius: 24px;
   box-shadow: 
     0 20px 40px rgba(0, 0, 0, 0.1),
@@ -51,7 +51,7 @@ body::before {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  margin-bottom: 40px;
+  margin: 0 0 20px 0;
   font-size: 2.5em;
   font-weight: 700;
   letter-spacing: -0.02em;
@@ -60,12 +60,12 @@ body::before {
 /* Estilos para la pantalla inicial */
 .start-container {
   text-align: center;
-  padding: 40px 0;
+  padding: 20px 0;
 }
 
 /* Icono DISC */
 .disc-icon-container {
-  margin-bottom: 50px;
+  margin-bottom: 25px;
 }
 
 .disc-icon {
@@ -296,16 +296,17 @@ body::before {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.2em;
-  font-weight: bold;
+  font-size: 1.1em;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.3);
   box-shadow: 0 4px 12px rgba(25, 130, 196, 0.3);
 }
 
 .scale-label {
   font-size: 1em;
   font-weight: 600;
+  color: #2d3748;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  color: #4a5568;
   text-align: center;
   max-width: 100px;
   letter-spacing: 0.01em;
@@ -423,7 +424,7 @@ body::before {
   background: linear-gradient(135deg, rgba(25, 130, 196, 0.1) 0%, rgba(255, 89, 94, 0.1) 100%);
   border-radius: 12px;
   padding: 12px 20px;
-  margin: 20px 0;
+  margin: 10px 0;
   border: 1px solid rgba(25, 130, 196, 0.2);
   color: #4a5568;
   font-weight: 600;
@@ -653,13 +654,13 @@ body::before {
 
 #eneagram-test-wrapper #submit-btn {
   display: none;
-  margin: 30px auto;
+  margin: 15px auto;
 }
 
 #eneagram-test-wrapper #pagination-controls {
-  margin-top: 30px;
-  margin-bottom: 30px;
-  padding: 20px;
+  margin-top: 15px;
+  margin-bottom: 15px;
+  padding: 15px;
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(248, 250, 252, 0.8) 100%);
   backdrop-filter: blur(10px);
   border-radius: 20px;
