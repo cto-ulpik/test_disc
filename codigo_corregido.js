@@ -406,7 +406,7 @@ function mostrarModalEmail() {
           <label for="modal-promociones-checkbox" style="display: flex; align-items: flex-start; gap: 12px; font-size: 0.95em; color: #4a5568; cursor: pointer; line-height: 1.5;">
             <input type="checkbox" id="modal-promociones-checkbox"
                    style="margin: 0; width: 18px; height: 18px; accent-color: #1982C4; flex-shrink: 0; margin-top: 2px;">
-            <span>Al hacer clic, autorizo recibir correos y promociones (opcional).</span>
+            <span>Al hacer clic, autorizo recibir correos y promociones.</span>
           </label>
         </div>
       </div>
