@@ -1626,7 +1626,7 @@ function displayResults(scores) {
       
       <!-- Header -->
       <div style="text-align: center; margin-bottom: 30px;">
-        <div style="background: linear-gradient(135deg, ${typeColors[dominantTypeIndex]}, ${typeColors[dominantTypeIndex]}dd); color: white; padding: 15px 30px; border-radius: 12px; display: inline-block; font-weight: 800; font-size: 1.2em; letter-spacing: 1px;">
+        <div style="background: linear-gradient(135deg, ${typeColors[dominantTypeIndex]}, ${typeColors[dominantTypeIndex]}dd); color: white; padding: 15px 30px; border-radius: 12px; display: inline-block; font-weight: 800; font-size: 1.2em; letter-spacing: 1px; text-shadow: 0 2px 6px rgba(0,0,0,0.28), 0 1px 2px rgba(0,0,0,0.24);">
           ${dominantInfo.title.toUpperCase()} | ${dominantInfo.strengths.slice(0, 2).join(' | ').toUpperCase()}
         </div>
       </div>
