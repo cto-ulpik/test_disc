@@ -8,6 +8,7 @@ let shuffledBlocks = [];
 let userResponses = []; // Array de objetos {most: dimension, least: dimension}
 let currentBlockIndex = 0;
 const blocksPerPage = 1; // Mostrar un bloque a la vez
+let userEmail = ''; // Email del usuario para pre-llenar formulario de Bitrix24
 
 // Prueba de Toastify
 console.log('Toastify disponible:', typeof Toastify !== 'undefined');
@@ -439,7 +440,6 @@ function mostrarModalEmail() {
       const email = emailInput.value.trim();
       const emailValid = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email);
       const consentimientoValid = consentimientoCheckbox.checked;
-      const promocionesValid = promocionesCheckbox.checked;
       
       // Verificar si hay preguntas sin responder
       const preguntasSinResponder = userResponses.filter(response => response === null).length;
@@ -462,13 +462,13 @@ function mostrarModalEmail() {
         saveBtn.disabled = false;
         errorDiv.style.display = 'none';
       } else {
-        emailInput.style.borderColor = email.length > 0 && !emailValid ? '#e74c3c' : '#ddd';
+        emailInput.style.borderColor = email.length > 0 && !emailValid ? '#e74c3c' : 'rgba(25, 130, 196, 0.2)';
         saveBtn.disabled = true;
         errorDiv.style.display = 'none'; // Ocultar mensajes de error en validación en tiempo real
       }
     }
 
-    // Validación de email en tiempo real
+    // Validación en tiempo real
     emailInput.addEventListener('input', validateForm);
     
     // Validación de checkboxes
@@ -571,9 +571,14 @@ function mostrarModalEmail() {
       
       // Si todo está válido, guardar en Firestore y proceder
       const acceptsPromotions = promocionesCheckbox.checked;
+      
+      // Guardar el email globalmente para pre-llenar el formulario de Bitrix24
+      userEmail = email;
+      console.log('✅ Email guardado para pre-llenar formulario de Bitrix24:', userEmail);
+      
       await updateFirestoreWithEmail(email, acceptsPromotions);
       document.body.removeChild(modal);
-      resolve(email);
+      resolve({ email, acceptsPromotions });
     });
 
     cancelBtn.addEventListener('click', function() {
@@ -598,7 +603,7 @@ function mostrarModalEmail() {
     // Validación inicial
     validateForm();
     
-    // Focus en el input
+    // Focus en el input de email
     setTimeout(() => emailInput.focus(), 100);
   });
 }
@@ -1924,6 +1929,350 @@ function hideWhatsAppLoader() {
   }
 }
 
+// Función para cargar el script de Bitrix24
+function loadBitrix24Form() {
+  return new Promise((resolve, reject) => {
+    console.log('🔵 [BITRIX24 LOAD] Iniciando carga del formulario');
+    
+    // Verificar si ya existe el script
+    const existingScript = document.querySelector('script[data-b24-form="inline/348/em3lym"]');
+    if (existingScript) {
+      console.log('✅ [BITRIX24 LOAD] Script de Bitrix24 ya estaba cargado');
+      console.log('   - Src del script:', existingScript.src);
+      resolve();
+      return;
+    }
+
+    console.log('📦 [BITRIX24 LOAD] Creando contenedor para el formulario...');
+    // Crear contenedor para el formulario de Bitrix (oculto)
+    let bitrixContainer = document.getElementById('bitrix-form-container');
+    if (!bitrixContainer) {
+      bitrixContainer = document.createElement('div');
+      bitrixContainer.id = 'bitrix-form-container';
+      bitrixContainer.style.cssText = 'position: absolute; left: -9999px; top: -9999px; visibility: hidden; pointer-events: none;';
+      document.body.appendChild(bitrixContainer);
+      console.log('✅ [BITRIX24 LOAD] Contenedor creado y agregado al DOM');
+    } else {
+      console.log('ℹ️ [BITRIX24 LOAD] Contenedor ya existía');
+    }
+
+    console.log('📜 [BITRIX24 LOAD] Creando script principal con IIFE (como Bitrix24 original)...');
+    
+    // Crear el script exactamente como Bitrix24 lo hace
+    const mainScript = document.createElement('script');
+    mainScript.setAttribute('data-b24-form', 'inline/348/em3lym');
+    mainScript.setAttribute('data-skip-moving', 'true');
+    
+    // IIFE exacta de Bitrix24 que crea y carga el script del formulario
+    mainScript.textContent = `
+      (function(w,d,u){
+        console.log('🔵 [BITRIX24 IIFE] Función de Bitrix24 ejecutándose...');
+        console.log('🔵 [BITRIX24 IIFE] Creando script de carga del formulario...');
+        var s=d.createElement('script');
+        s.async=true;
+        s.src=u+'?'+(Date.now()/180000|0);
+        console.log('📡 [BITRIX24 IIFE] URL del loader:', s.src);
+        var h=d.getElementsByTagName('script')[0];
+        h.parentNode.insertBefore(s,h);
+        console.log('✅ [BITRIX24 IIFE] Script del loader insertado antes del primer script');
+        
+        // Listener para cuando el script del loader termine de cargar
+        s.onload = function() {
+          console.log('✅ [BITRIX24 IIFE] Loader de Bitrix24 cargado');
+        };
+        
+        s.onerror = function(error) {
+          console.error('❌ [BITRIX24 IIFE] Error cargando el loader:', error);
+        };
+      })(window,document,'https://cdn.bitrix24.es/b13143615/crm/form/loader_348.js');
+      
+      console.log('✅ [BITRIX24 IIFE] IIFE de Bitrix24 ejecutada');
+    `;
+    
+    console.log('➕ [BITRIX24 LOAD] Agregando script principal al contenedor...');
+    bitrixContainer.appendChild(mainScript);
+    console.log('✅ [BITRIX24 LOAD] Script principal agregado');
+    
+    // Esperar a que el formulario se renderice
+    console.log('⏳ [BITRIX24 LOAD] Esperando 3 segundos para que el formulario se renderice completamente...');
+    setTimeout(() => {
+      console.log('🔍 [BITRIX24 LOAD] Buscando formulario renderizado...');
+      
+      const form = document.querySelector('[data-b24-form="inline/348/em3lym"]') || 
+                   document.querySelector('iframe[src*="bitrix24"]') ||
+                   document.querySelector('iframe[src*="b24"]') ||
+                   document.querySelector('.b24-form');
+      
+      if (form) {
+        console.log('✅ [BITRIX24 LOAD] Formulario de Bitrix24 detectado en el DOM');
+        console.log('   - Tipo de elemento:', form.tagName);
+        console.log('   - ID:', form.id || 'sin id');
+        console.log('   - Clase:', form.className || 'sin clase');
+        
+        // Listar iframes encontrados
+        const iframes = document.querySelectorAll('iframe');
+        console.log(`   - Total de iframes en la página: ${iframes.length}`);
+        iframes.forEach((iframe, index) => {
+          console.log(`     * Iframe ${index + 1}: ${iframe.src || 'sin src'}`);
+        });
+        
+        resolve();
+      } else {
+        console.warn('⚠️ [BITRIX24 LOAD] Formulario de Bitrix24 NO detectado visualmente');
+        console.log('💡 [BITRIX24 LOAD] Esto puede ser normal si el formulario se carga dinámicamente');
+        console.log('💡 [BITRIX24 LOAD] Continuando de todas formas...');
+        
+        // Mostrar todos los scripts cargados
+        const allScripts = document.querySelectorAll('script');
+        console.log(`📜 [BITRIX24 LOAD] Total de scripts en la página: ${allScripts.length}`);
+        let bitrixScripts = 0;
+        allScripts.forEach((script, index) => {
+          if (script.src && (script.src.includes('bitrix24') || script.src.includes('b24'))) {
+            console.log(`     * Script Bitrix24 #${++bitrixScripts}: ${script.src.substring(0, 80)}...`);
+          }
+        });
+        
+        resolve();
+      }
+    }, 3000);
+  });
+}
+
+// Función para rellenar y enviar el formulario de Bitrix24
+async function fillAndSubmitBitrix24Form(nombre, email, celular) {
+  try {
+    console.log('🔵 [BITRIX24] Iniciando llenado de formulario');
+    console.log('📝 [BITRIX24] Datos a enviar:', { nombre, email, celular });
+    
+    // Esperar un poco más para asegurar que el formulario esté completamente cargado
+    console.log('⏳ [BITRIX24] Esperando 1 segundo para que el formulario se renderice...');
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Buscar todos los iframes
+    const allIframes = Array.from(document.querySelectorAll('iframe'));
+    console.log(`🔍 [BITRIX24] Total de iframes encontrados: ${allIframes.length}`);
+    allIframes.forEach((iframe, index) => {
+      console.log(`   - Iframe ${index + 1}: ${iframe.src || iframe.id || 'sin identificación'}`);
+    });
+    
+    // Buscar el iframe del formulario de Bitrix24
+    const bitrixIframe = document.querySelector('iframe[src*="bitrix24"]') || 
+                        document.querySelector('iframe[src*="b24-"]') ||
+                        allIframes.find(iframe => {
+                          const src = iframe.src || '';
+                          return src.includes('bitrix') || src.includes('b24');
+                        });
+    
+    if (bitrixIframe) {
+      console.log('✅ [BITRIX24] Iframe de Bitrix24 encontrado:', bitrixIframe.src);
+      console.log('🔍 [BITRIX24] Analizando iframe...');
+      console.log('   - Width:', bitrixIframe.width);
+      console.log('   - Height:', bitrixIframe.height);
+      console.log('   - Display:', window.getComputedStyle(bitrixIframe).display);
+      console.log('   - Visibility:', window.getComputedStyle(bitrixIframe).visibility);
+      
+      // Intentar acceder al contenido del iframe
+      try {
+        const iframeDoc = bitrixIframe.contentWindow.document;
+        console.log('✅ [BITRIX24] Acceso al documento del iframe conseguido');
+        
+        // Listar todos los inputs
+        const allInputs = iframeDoc.querySelectorAll('input');
+        console.log(`🔍 [BITRIX24] Total de inputs en el iframe: ${allInputs.length}`);
+        allInputs.forEach((input, index) => {
+          console.log(`   - Input ${index + 1}:`, {
+            type: input.type,
+            name: input.name,
+            placeholder: input.placeholder,
+            id: input.id
+          });
+        });
+        
+        // Buscar campos en el iframe con múltiples estrategias
+        console.log('🔍 [BITRIX24] Buscando campo de nombre...');
+        const nombreField = iframeDoc.querySelector('input[name*="name"]') || 
+                           iframeDoc.querySelector('input[placeholder*="nombre"]') ||
+                           iframeDoc.querySelector('input[placeholder*="Nombre"]') ||
+                           iframeDoc.querySelector('input[name*="NAME"]') ||
+                           Array.from(allInputs).find(input => 
+                             input.type === 'text' && 
+                             (input.name.toLowerCase().includes('name') || 
+                              input.placeholder.toLowerCase().includes('nombre'))
+                           );
+        
+        console.log('🔍 [BITRIX24] Buscando campo de email...');
+        const emailField = iframeDoc.querySelector('input[type="email"]') || 
+                          iframeDoc.querySelector('input[name*="email"]') ||
+                          iframeDoc.querySelector('input[name*="EMAIL"]') ||
+                          Array.from(allInputs).find(input => 
+                            input.type === 'email' || 
+                            input.name.toLowerCase().includes('email')
+                          );
+        
+        console.log('🔍 [BITRIX24] Buscando campo de teléfono/celular...');
+        const celularField = iframeDoc.querySelector('input[type="tel"]') || 
+                            iframeDoc.querySelector('input[name*="phone"]') ||
+                            iframeDoc.querySelector('input[name*="PHONE"]') ||
+                            iframeDoc.querySelector('input[name*="celular"]') ||
+                            iframeDoc.querySelector('input[name*="telefono"]') ||
+                            Array.from(allInputs).find(input => 
+                              input.type === 'tel' || 
+                              input.name.toLowerCase().includes('phone') ||
+                              input.name.toLowerCase().includes('telefono') ||
+                              input.name.toLowerCase().includes('celular')
+                            );
+        
+        console.log('📊 [BITRIX24] Resultados de búsqueda de campos:');
+        console.log('   - Campo nombre:', nombreField ? '✅ ENCONTRADO' : '❌ NO ENCONTRADO');
+        console.log('   - Campo email:', emailField ? '✅ ENCONTRADO' : '❌ NO ENCONTRADO');
+        console.log('   - Campo celular:', celularField ? '✅ ENCONTRADO' : '❌ NO ENCONTRADO');
+        
+        // Rellenar campos encontrados
+        if (nombreField) {
+          console.log('📝 [BITRIX24] Rellenando campo nombre...');
+          nombreField.value = nombre;
+          nombreField.dispatchEvent(new Event('input', { bubbles: true }));
+          nombreField.dispatchEvent(new Event('change', { bubbles: true }));
+          nombreField.dispatchEvent(new Event('blur', { bubbles: true }));
+          console.log('✅ [BITRIX24] Campo nombre rellenado:', nombreField.value);
+        }
+        
+        if (emailField) {
+          console.log('📝 [BITRIX24] Rellenando campo email...');
+          emailField.value = email;
+          emailField.dispatchEvent(new Event('input', { bubbles: true }));
+          emailField.dispatchEvent(new Event('change', { bubbles: true }));
+          emailField.dispatchEvent(new Event('blur', { bubbles: true }));
+          console.log('✅ [BITRIX24] Campo email rellenado:', emailField.value);
+        }
+        
+        if (celularField) {
+          console.log('📝 [BITRIX24] Rellenando campo celular...');
+          celularField.value = celular;
+          celularField.dispatchEvent(new Event('input', { bubbles: true }));
+          celularField.dispatchEvent(new Event('change', { bubbles: true }));
+          celularField.dispatchEvent(new Event('blur', { bubbles: true }));
+          console.log('✅ [BITRIX24] Campo celular rellenado:', celularField.value);
+        }
+        
+        // Esperar un poco antes de enviar
+        console.log('⏳ [BITRIX24] Esperando 500ms antes de buscar botón de envío...');
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Buscar botón de envío
+        console.log('🔍 [BITRIX24] Buscando botón de envío...');
+        const allButtons = iframeDoc.querySelectorAll('button');
+        console.log(`   Total de botones: ${allButtons.length}`);
+        allButtons.forEach((btn, index) => {
+          console.log(`   - Botón ${index + 1}:`, {
+            type: btn.type,
+            className: btn.className,
+            textContent: btn.textContent.trim().substring(0, 50)
+          });
+        });
+        
+        const submitBtn = iframeDoc.querySelector('button[type="submit"]') ||
+                         iframeDoc.querySelector('.b24-form-btn') ||
+                         iframeDoc.querySelector('button.btn-primary') ||
+                         iframeDoc.querySelector('input[type="submit"]') ||
+                         Array.from(allButtons).find(btn => 
+                           btn.type === 'submit' || 
+                           btn.textContent.toLowerCase().includes('enviar') ||
+                           btn.textContent.toLowerCase().includes('submit')
+                         );
+        
+        if (submitBtn) {
+          console.log('✅ [BITRIX24] Botón de envío encontrado');
+          console.log('🖱️ [BITRIX24] Haciendo clic en el botón...');
+          submitBtn.click();
+          console.log('✅ [BITRIX24] Formulario enviado exitosamente');
+          return true;
+        } else {
+          console.warn('⚠️ [BITRIX24] Botón de envío NO encontrado');
+          console.log('💡 [BITRIX24] Los datos fueron rellenados pero no se pudo enviar automáticamente');
+          return false;
+        }
+      } catch (iframeError) {
+        console.error('❌ [BITRIX24] No se pudo acceder al contenido del iframe (CORS):', iframeError);
+        console.log('💡 [BITRIX24] Intentando método alternativo con postMessage...');
+        
+        bitrixIframe.contentWindow.postMessage({
+          type: 'b24-form-fill',
+          data: { nombre, email, celular }
+        }, '*');
+        
+        console.log('📤 [BITRIX24] Mensaje postMessage enviado');
+        return false;
+      }
+    } else {
+      console.log('ℹ️ [BITRIX24] No se encontró iframe, buscando formulario directo en el DOM...');
+      
+      // Listar todos los inputs del DOM principal
+      const allInputs = document.querySelectorAll('input');
+      console.log(`🔍 [BITRIX24] Total de inputs en el DOM principal: ${allInputs.length}`);
+      
+      const nombreField = document.querySelector('input[name*="name"]') || 
+                         document.querySelector('input[placeholder*="nombre"]') ||
+                         document.querySelector('input[placeholder*="Nombre"]');
+      const emailField = document.querySelector('input[type="email"]') || 
+                        document.querySelector('input[name*="email"]');
+      const celularField = document.querySelector('input[type="tel"]') || 
+                          document.querySelector('input[name*="phone"]') ||
+                          document.querySelector('input[name*="celular"]');
+      
+      console.log('📊 [BITRIX24] Resultados en DOM principal:');
+      console.log('   - Campo nombre:', nombreField ? '✅ ENCONTRADO' : '❌ NO ENCONTRADO');
+      console.log('   - Campo email:', emailField ? '✅ ENCONTRADO' : '❌ NO ENCONTRADO');
+      console.log('   - Campo celular:', celularField ? '✅ ENCONTRADO' : '❌ NO ENCONTRADO');
+      
+      if (nombreField || emailField || celularField) {
+        if (nombreField) {
+          nombreField.value = nombre;
+          nombreField.dispatchEvent(new Event('input', { bubbles: true }));
+          nombreField.dispatchEvent(new Event('change', { bubbles: true }));
+          console.log('✅ [BITRIX24] Campo nombre rellenado');
+        }
+        
+        if (emailField) {
+          emailField.value = email;
+          emailField.dispatchEvent(new Event('input', { bubbles: true }));
+          emailField.dispatchEvent(new Event('change', { bubbles: true }));
+          console.log('✅ [BITRIX24] Campo email rellenado');
+        }
+        
+        if (celularField) {
+          celularField.value = celular;
+          celularField.dispatchEvent(new Event('input', { bubbles: true }));
+          celularField.dispatchEvent(new Event('change', { bubbles: true }));
+          console.log('✅ [BITRIX24] Campo celular rellenado');
+        }
+        
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        const submitBtn = document.querySelector('.b24-form button[type="submit"]') ||
+                         document.querySelector('.b24-form-btn') ||
+                         document.querySelector('button.btn-primary') ||
+                         document.querySelector('input[type="submit"]');
+        
+        if (submitBtn) {
+          submitBtn.click();
+          console.log('✅ [BITRIX24] Formulario enviado');
+          return true;
+        }
+      } else {
+        console.warn('⚠️ [BITRIX24] No se encontraron campos del formulario');
+      }
+    }
+    
+    console.log('❌ [BITRIX24] No se pudo completar el envío automático');
+    return false;
+  } catch (error) {
+    console.error('❌ [BITRIX24] Error crítico:', error);
+    console.error('Stack trace:', error.stack);
+    return false;
+  }
+}
+
 // Función para actualizar Firestore con el email y preferencia de promociones
 async function updateFirestoreWithEmail(email, acceptsPromotions) {
   if (!firebaseAvailable || !firestoreDocRef) {
@@ -2118,10 +2467,316 @@ async function handleWhatsAppSubmit() {
   }
 }
 
+// Función para auto-rellenar el email en el formulario de Bitrix24
+function autoFillBitrix24Email() {
+  if (!userEmail) {
+    console.log('⚠️ [BITRIX24 AUTOFILL] No hay email guardado para auto-rellenar');
+    return false;
+  }
+  
+  console.log('🔍 [BITRIX24 AUTOFILL] Buscando campo de email en formulario de Bitrix24...');
+  console.log('📧 [BITRIX24 AUTOFILL] Email a rellenar:', userEmail);
+  
+  // Intentar encontrar el iframe del formulario
+  const bitrixIframe = document.querySelector('iframe[src*="bitrix24"]') || 
+                       document.querySelector('iframe[src*="b24-"]') ||
+                       Array.from(document.querySelectorAll('iframe')).find(iframe => {
+                         const src = iframe.src || '';
+                         return src.includes('bitrix') || src.includes('b24');
+                       });
+  
+  if (bitrixIframe) {
+    console.log('✅ [BITRIX24 AUTOFILL] Iframe encontrado:', bitrixIframe.src);
+    
+    try {
+      const iframeDoc = bitrixIframe.contentWindow.document;
+      
+      // Buscar campo de email
+      const emailField = iframeDoc.querySelector('input[type="email"]') || 
+                        iframeDoc.querySelector('input[name*="email"]') ||
+                        iframeDoc.querySelector('input[name*="EMAIL"]') ||
+                        Array.from(iframeDoc.querySelectorAll('input')).find(input => 
+                          input.type === 'email' || 
+                          input.name.toLowerCase().includes('email') ||
+                          input.placeholder.toLowerCase().includes('email') ||
+                          input.placeholder.toLowerCase().includes('correo')
+                        );
+      
+      if (emailField && !emailField.value) {
+        console.log('✅ [BITRIX24 AUTOFILL] Campo de email encontrado');
+        emailField.value = userEmail;
+        emailField.dispatchEvent(new Event('input', { bubbles: true }));
+        emailField.dispatchEvent(new Event('change', { bubbles: true }));
+        emailField.dispatchEvent(new Event('blur', { bubbles: true }));
+        console.log('✅ [BITRIX24 AUTOFILL] Email auto-rellenado exitosamente:', userEmail);
+        
+        // Resaltar visualmente el campo para que el usuario sepa que se rellenó
+        emailField.style.backgroundColor = '#e8f5e9';
+        setTimeout(() => {
+          emailField.style.backgroundColor = '';
+        }, 2000);
+        
+        return true;
+      } else if (emailField && emailField.value) {
+        console.log('ℹ️ [BITRIX24 AUTOFILL] Campo de email ya tiene valor:', emailField.value);
+        return true;
+      } else {
+        console.log('⚠️ [BITRIX24 AUTOFILL] Campo de email no encontrado en iframe');
+        return false;
+      }
+    } catch (error) {
+      console.warn('⚠️ [BITRIX24 AUTOFILL] No se pudo acceder al iframe (CORS):', error.message);
+      return false;
+    }
+  } else {
+    // Buscar formulario directamente en el DOM
+    console.log('🔍 [BITRIX24 AUTOFILL] Buscando formulario en el DOM principal...');
+    
+    const emailField = document.querySelector('#bitrix24-form-container input[type="email"]') || 
+                      document.querySelector('#bitrix24-form-container input[name*="email"]') ||
+                      Array.from(document.querySelectorAll('#bitrix24-form-container input')).find(input => 
+                        input.type === 'email' || 
+                        input.name.toLowerCase().includes('email') ||
+                        input.placeholder.toLowerCase().includes('email') ||
+                        input.placeholder.toLowerCase().includes('correo')
+                      );
+    
+    if (emailField && !emailField.value) {
+      console.log('✅ [BITRIX24 AUTOFILL] Campo de email encontrado en DOM');
+      emailField.value = userEmail;
+      emailField.dispatchEvent(new Event('input', { bubbles: true }));
+      emailField.dispatchEvent(new Event('change', { bubbles: true }));
+      emailField.dispatchEvent(new Event('blur', { bubbles: true }));
+      console.log('✅ [BITRIX24 AUTOFILL] Email auto-rellenado exitosamente:', userEmail);
+      
+      // Resaltar visualmente el campo
+      emailField.style.backgroundColor = '#e8f5e9';
+      setTimeout(() => {
+        emailField.style.backgroundColor = '';
+      }, 2000);
+      
+      return true;
+    } else if (emailField && emailField.value) {
+      console.log('ℹ️ [BITRIX24 AUTOFILL] Campo de email ya tiene valor:', emailField.value);
+      return true;
+    } else {
+      console.log('⚠️ [BITRIX24 AUTOFILL] Campo de email no encontrado en DOM');
+      return false;
+    }
+  }
+}
+
+// Función para intentar auto-rellenar el email periódicamente
+function startBitrix24EmailAutofill() {
+  if (!userEmail) {
+    console.log('⚠️ [BITRIX24 AUTOFILL] No hay email para auto-rellenar');
+    return;
+  }
+  
+  console.log('🔄 [BITRIX24 AUTOFILL] Iniciando auto-relleno periódico...');
+  
+  let attempts = 0;
+  const maxAttempts = 20; // Intentar durante 20 segundos
+  
+  const interval = setInterval(() => {
+    attempts++;
+    console.log(`🔄 [BITRIX24 AUTOFILL] Intento ${attempts}/${maxAttempts}...`);
+    
+    const success = autoFillBitrix24Email();
+    
+    if (success) {
+      console.log('✅ [BITRIX24 AUTOFILL] Auto-relleno completado exitosamente');
+      clearInterval(interval);
+      
+      // Mostrar notificación al usuario
+      if (typeof Toastify !== 'undefined') {
+        Toastify({
+          text: `✉️ Tu email (${userEmail}) se ha pre-llenado en el formulario`,
+          duration: 5000,
+          gravity: "bottom",
+          position: "center",
+          backgroundColor: "linear-gradient(to right, #22C55E, #16a34a)",
+          style: {
+            fontSize: "14px",
+            fontWeight: "600",
+            borderRadius: "12px",
+            boxShadow: "0 4px 15px rgba(34, 197, 94, 0.3)"
+          }
+        }).showToast();
+      }
+    } else if (attempts >= maxAttempts) {
+      console.log('⏱️ [BITRIX24 AUTOFILL] Tiempo máximo alcanzado, deteniendo intentos');
+      clearInterval(interval);
+    }
+  }, 1000); // Intentar cada segundo
+}
+
+// Función de diagnóstico para Bitrix24
+async function diagnosticarBitrix24() {
+  console.log("=== DIAGNÓSTICO DE BITRIX24 ===");
+  
+  // 1. Verificar si el script está cargado
+  const bitrixScript = document.querySelector('script[data-b24-form="inline/348/em3lym"]');
+  console.log("1. Script principal de Bitrix24:", bitrixScript ? "✅ SÍ" : "❌ NO");
+  if (bitrixScript) {
+    console.log("   - Atributo data-b24-form:", bitrixScript.getAttribute('data-b24-form'));
+    console.log("   - Atributo data-skip-moving:", bitrixScript.getAttribute('data-skip-moving'));
+    console.log("   - Tiene contenido (IIFE):", bitrixScript.textContent.length > 0 ? "✅ SÍ" : "❌ NO");
+  }
+  
+  // 1b. Verificar el script loader de Bitrix24
+  const loaderScripts = Array.from(document.querySelectorAll('script')).filter(s => 
+    s.src && s.src.includes('bitrix24.es/b13143615/crm/form/loader_348.js')
+  );
+  console.log("1b. Script(s) loader de Bitrix24:", loaderScripts.length);
+  loaderScripts.forEach((script, index) => {
+    console.log(`   - Loader ${index + 1}:`, script.src);
+  })
+  
+  // 2. Verificar contenedor
+  const bitrixContainer = document.getElementById('bitrix-form-container');
+  console.log("2. Contenedor de Bitrix24:", bitrixContainer ? "✅ SÍ" : "❌ NO");
+  if (bitrixContainer) {
+    console.log("   - Visible:", bitrixContainer.style.visibility);
+    console.log("   - HTML:", bitrixContainer.innerHTML.substring(0, 200) + "...");
+  }
+  
+  // 3. Buscar iframes
+  const allIframes = document.querySelectorAll('iframe');
+  console.log("3. Total de iframes en la página:", allIframes.length);
+  allIframes.forEach((iframe, index) => {
+    console.log(`   - Iframe ${index + 1}:`, iframe.src || iframe.id || "sin src/id");
+  });
+  
+  // 4. Buscar iframes específicos de Bitrix24
+  const bitrixIframes = Array.from(allIframes).filter(iframe => 
+    iframe.src.includes('bitrix24') || iframe.src.includes('b24-')
+  );
+  console.log("4. Iframes de Bitrix24 encontrados:", bitrixIframes.length);
+  bitrixIframes.forEach((iframe, index) => {
+    console.log(`   - Bitrix Iframe ${index + 1}:`, iframe.src);
+  });
+  
+  // 5. Buscar formularios directos (sin iframe)
+  const b24Forms = document.querySelectorAll('[data-b24-form]');
+  console.log("5. Formularios Bitrix24 directos:", b24Forms.length);
+  b24Forms.forEach((form, index) => {
+    console.log(`   - Formulario ${index + 1}:`, form.getAttribute('data-b24-form'));
+  });
+  
+  // 6. Verificar si hay objetos globales de Bitrix24
+  console.log("6. Variables globales de Bitrix24:");
+  console.log("   - window.b24form:", typeof window.b24form);
+  console.log("   - window.BX24:", typeof window.BX24);
+  
+  console.log("=== FIN DIAGNÓSTICO DE BITRIX24 ===");
+}
+
+// Función de prueba para enviar a Bitrix24
+async function probarEnvioBitrix24(nombre, email, celular) {
+  console.log("=== PRUEBA DE ENVÍO A BITRIX24 ===");
+  console.log("Datos a enviar:", { nombre, email, celular });
+  
+  // Primero cargar el formulario
+  console.log("Paso 1: Cargando formulario de Bitrix24...");
+  try {
+    await loadBitrix24Form();
+    console.log("✅ Formulario cargado");
+  } catch (error) {
+    console.error("❌ Error cargando formulario:", error);
+    return false;
+  }
+  
+  // Esperar un poco más
+  console.log("Paso 2: Esperando renderización completa...");
+  await new Promise(resolve => setTimeout(resolve, 3000));
+  
+  // Diagnosticar
+  await diagnosticarBitrix24();
+  
+  // Intentar rellenar y enviar
+  console.log("Paso 3: Intentando rellenar y enviar...");
+  const resultado = await fillAndSubmitBitrix24Form(nombre, email, celular);
+  console.log("Resultado:", resultado ? "✅ ÉXITO" : "❌ FALLO");
+  
+  console.log("=== FIN PRUEBA ===");
+  return resultado;
+}
+
+// Función para cargar el formulario de Bitrix24 de forma VISIBLE (para pruebas)
+function cargarBitrix24Visible() {
+  console.log('🔵 [BITRIX24 VISIBLE] Cargando formulario VISIBLE para pruebas...');
+  
+  // Eliminar contenedor oculto si existe
+  const hiddenContainer = document.getElementById('bitrix-form-container');
+  if (hiddenContainer) {
+    hiddenContainer.remove();
+    console.log('🗑️ [BITRIX24 VISIBLE] Contenedor oculto eliminado');
+  }
+  
+  // Crear contenedor visible
+  const visibleContainer = document.createElement('div');
+  visibleContainer.id = 'bitrix-form-visible-container';
+  visibleContainer.style.cssText = `
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    z-index: 999999;
+    max-width: 600px;
+    width: 90%;
+  `;
+  
+  // Título y botón de cerrar
+  visibleContainer.innerHTML = `
+    <div style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+      <h2 style="margin: 0; color: #1982C4;">📋 Formulario Bitrix24 (Prueba)</h2>
+      <button onclick="document.getElementById('bitrix-form-visible-container').remove()" 
+              style="padding: 8px 16px; background: #e53935; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">
+        Cerrar
+      </button>
+    </div>
+    <div id="bitrix-form-content"></div>
+  `;
+  
+  document.body.appendChild(visibleContainer);
+  console.log('✅ [BITRIX24 VISIBLE] Contenedor visible creado');
+  
+  // Crear el script de Bitrix24
+  const script = document.createElement('script');
+  script.setAttribute('data-b24-form', 'inline/348/em3lym');
+  script.setAttribute('data-skip-moving', 'true');
+  script.textContent = `
+    (function(w,d,u){
+      console.log('🔵 [BITRIX24 VISIBLE] IIFE ejecutándose...');
+      var s=d.createElement('script');
+      s.async=true;
+      s.src=u+'?'+(Date.now()/180000|0);
+      console.log('📡 [BITRIX24 VISIBLE] URL:', s.src);
+      var h=d.getElementsByTagName('script')[0];
+      h.parentNode.insertBefore(s,h);
+      console.log('✅ [BITRIX24 VISIBLE] Script insertado');
+    })(window,document,'https://cdn.bitrix24.es/b13143615/crm/form/loader_348.js');
+  `;
+  
+  document.getElementById('bitrix-form-content').appendChild(script);
+  console.log('✅ [BITRIX24 VISIBLE] Formulario visible cargándose...');
+  console.log('💡 [BITRIX24 VISIBLE] Espera unos segundos para ver el formulario renderizado');
+}
+
 // Agregar funciones globales para depuración
 window.diagnosticarFirebase = diagnosticarFirebase;
 window.forzarGuardadoRespuestas = forzarGuardadoRespuestas;
 window.forzarCreacionDocumento = forzarCreacionDocumento;
+window.diagnosticarBitrix24 = diagnosticarBitrix24;
+window.probarEnvioBitrix24 = probarEnvioBitrix24;
+window.cargarBitrix24Visible = cargarBitrix24Visible;
+window.autoFillBitrix24Email = autoFillBitrix24Email;
+window.startBitrix24EmailAutofill = startBitrix24EmailAutofill;
 
 // Manejar click del botón submit - ahora como div normal
 if (submitBtn) {
@@ -2134,18 +2789,21 @@ if (submitBtn) {
     
     const scores = calculateScores();
     if (scores) {
-      // Solicitar email al usuario antes de guardar
-      const email = await mostrarModalEmail();
+      // Solicitar email y permisos al usuario antes de mostrar resultados
+      const userData = await mostrarModalEmail();
       
-      if (!email) {
+      if (!userData) {
         // Usuario canceló, no hacer nada (quedarse en el test)
         return;
       }
       
-      if (email === 'complete') {
+      if (userData === 'complete') {
         // Usuario quiere completar preguntas, no hacer nada (quedarse en el test)
         return;
       }
+      
+      // Extraer datos del usuario
+      const { email, acceptsPromotions } = userData;
       
       // Modelo resultado: { tipo, puntaje, descripcion }
       const maxScore = Math.max(...scores);
@@ -2189,10 +2847,42 @@ if (submitBtn) {
         guardarResultadoLocal(email, resultado, respuestasObj);
       }
       
-      // Simular tiempo de procesamiento para mostrar el loader
+      // Mostrar resultados después de un breve delay
       setTimeout(() => {
         hideResultsLoader();
-      displayResults(scores);
+        displayResults(scores);
+        
+        // NOTA: El formulario de Bitrix24 se carga automáticamente desde el HTML
+        // cuando se muestra el contenedor de resultados (#results-container).
+        // No es necesario cargarlo manualmente desde JavaScript.
+        // El script está en: index.html, líneas 135-143
+        console.log('✅ Formulario de Bitrix24 disponible en la página de resultados');
+        console.log('📋 El usuario puede llenarlo opcionalmente para recibir más información');
+        
+        // Iniciar auto-relleno del email en el formulario de Bitrix24
+        setTimeout(() => {
+          console.log('🔄 Iniciando auto-relleno de email en formulario de Bitrix24...');
+          startBitrix24EmailAutofill();
+        }, 2000); // Esperar 2 segundos para que el formulario se cargue
+        
+        // Notificación amigable informando sobre el formulario
+        if (typeof Toastify !== 'undefined') {
+          setTimeout(() => {
+            Toastify({
+              text: "💡 Desplázate hacia abajo para llenar el formulario de contacto si deseas más información",
+              duration: 6000,
+              gravity: "bottom",
+              position: "center",
+              backgroundColor: "linear-gradient(to right, #1982C4, #FF595E)",
+              style: {
+                fontSize: "15px",
+                fontWeight: "600",
+                borderRadius: "12px",
+                boxShadow: "0 4px 15px rgba(25, 130, 196, 0.3)"
+              }
+            }).showToast();
+          }, 1000);
+        }
       }, 2000);
     }
   });
@@ -2253,3 +2943,80 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 });
+
+/*
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║                    GUÍA DE DEPURACIÓN DE BITRIX24                              ║
+╚═══════════════════════════════════════════════════════════════════════════════╝
+
+Para diagnosticar problemas con el envío a Bitrix24, abre la CONSOLA DEL NAVEGADOR
+(F12 o Cmd+Option+I) y ejecuta estos comandos:
+
+1️⃣ DIAGNÓSTICO COMPLETO DE BITRIX24:
+   
+   diagnosticarBitrix24()
+   
+   Esto mostrará:
+   - Si el script de Bitrix24 está cargado
+   - Si hay contenedor de Bitrix24
+   - Lista de todos los iframes en la página
+   - Iframes específicos de Bitrix24
+   - Variables globales de Bitrix24
+
+2️⃣ PROBAR ENVÍO MANUAL A BITRIX24:
+   
+   probarEnvioBitrix24("Juan Pérez", "juan@ejemplo.com", "1234567890")
+   
+   Esto hará una prueba completa:
+   - Cargará el formulario de Bitrix24
+   - Mostrará diagnóstico detallado
+   - Intentará rellenar y enviar los datos
+   - Te dirá si fue exitoso o no
+
+3️⃣ VER LOGS DURANTE EL TEST:
+   
+   Cuando completes el test y hagas clic en "Ver resultados", verás en la consola
+   todos los pasos que se ejecutan con prefijos como:
+   
+   🔵 [BITRIX24 LOAD] - Carga del formulario
+   🔵 [BITRIX24] - Llenado y envío del formulario
+   ✅ - Éxito
+   ⚠️ - Advertencia
+   ❌ - Error
+
+4️⃣ DIAGNÓSTICO DE FIREBASE (si es necesario):
+   
+   diagnosticarFirebase()
+
+═══════════════════════════════════════════════════════════════════════════════
+
+PROBLEMAS COMUNES Y SOLUCIONES:
+
+❓ Problema: "No se encontraron iframes de Bitrix24"
+   Solución: El formulario puede no haberse cargado. Espera unos segundos y ejecuta
+             diagnosticarBitrix24() nuevamente.
+
+❓ Problema: "No se pudo acceder al contenido del iframe (CORS)"
+   Solución: Esto es normal si Bitrix24 usa un dominio diferente. Los datos se
+             intentarán enviar mediante postMessage.
+
+❓ Problema: "Botón de envío NO encontrado"
+   Solución: Los datos se rellenaron pero no se pudo hacer clic automáticamente.
+             Puedes enviar el formulario manualmente.
+
+❓ Problema: "Campos del formulario NO encontrados"
+   Solución: El formulario puede tener nombres de campos diferentes. 
+             Ejecuta diagnosticarBitrix24() y mira la lista de inputs para
+             identificar los nombres correctos.
+
+═══════════════════════════════════════════════════════════════════════════════
+
+VERIFICAR SI LOS DATOS LLEGARON A BITRIX24:
+
+1. Ve a tu panel de Bitrix24: https://b13143615.bitrix24.es/
+2. Ve a CRM → Formularios → Formulario 348
+3. Revisa las últimas entradas
+4. Verifica si los datos del test aparecen ahí
+
+═══════════════════════════════════════════════════════════════════════════════
+*/
