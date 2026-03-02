@@ -1212,6 +1212,11 @@ function renderCurrentBlock() {
   });
 
   quizContainer.appendChild(blockDiv);
+  
+  // Restaurar las respuestas anteriores si existen
+  if (userResponses[currentBlockIndex]) {
+    updateBlockVisuals(currentBlockIndex);
+  }
 }
 
 // Función para verificar si el bloque actual está completado
