@@ -996,6 +996,9 @@ function createPaginationButtons() {
       );
       return;
     }
+    
+    // Si ya completó el bloque, ocultar cualquier alerta previa de validación
+    hideAlert();
 
     if (currentBlockIndex < shuffledBlocks.length - 1) {
       currentBlockIndex++;
@@ -1253,6 +1256,8 @@ function selectOption(blockIndex, optionIndex, selectionType, dimension) {
   
   // Verificar si el bloque está completo
   if (userResponses[blockIndex].most !== null && userResponses[blockIndex].least !== null) {
+    // Ocultar alertas de validación apenas completa ambas selecciones
+    hideAlert();
     console.log(`Bloque ${blockIndex + 1} completado:`, userResponses[blockIndex]);
   }
 }
