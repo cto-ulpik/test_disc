@@ -351,7 +351,11 @@ function mostrarModalEmail() {
       backdrop-filter: blur(10px);
       display: flex;
       justify-content: center;
-      align-items: center;
+      align-items: flex-start;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 16px 0;
+      box-sizing: border-box;
       z-index: 10000;
       animation: modalFadeIn 0.3s ease-out;
     `;
@@ -361,7 +365,7 @@ function mostrarModalEmail() {
     modalContent.style.cssText = `
       background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.95) 100%);
       backdrop-filter: blur(20px);
-      padding: 40px;
+      padding: clamp(24px, 6vw, 40px);
       border-radius: 24px;
       box-shadow: 
         0 20px 40px rgba(0, 0, 0, 0.2),
@@ -371,7 +375,10 @@ function mostrarModalEmail() {
       width: 90%;
       text-align: center;
       position: relative;
-      overflow: hidden;
+      overflow-y: auto;
+      max-height: calc(100dvh - 32px);
+      margin: auto;
+      box-sizing: border-box;
       animation: modalSlideIn 0.4s ease-out;
     `;
 
