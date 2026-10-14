@@ -946,7 +946,7 @@ body::before {
 }
 
 #bitrix24-form-container .b24-form-control {
-  padding: 14px 18px !important;
+  /* padding quitado: pisaba el espacio de la etiqueta flotante de Bitrix24 */
   border: 2px solid rgba(25, 130, 196, 0.2) !important;
   border-radius: 12px !important;
   font-size: 1em !important;
