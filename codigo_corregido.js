@@ -1644,7 +1644,7 @@ function displayResults(scores) {
 
   // Crear HTML estilo MiPerfilDISC
   const simpleHTML = `
-    <div style="max-width: 1000px; margin: 0 auto; padding: 20px; background: #ffffff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+    <div style="max-width: 1000px; margin: 0 auto; padding: clamp(0px, 3vw, 20px); background: #ffffff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
       
       <!-- Header -->
       <div style="text-align: center; margin-bottom: 30px;">
@@ -1654,10 +1654,10 @@ function displayResults(scores) {
       </div>
 
       <!-- Contenido principal en dos columnas -->
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px;">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 30px; margin-bottom: 30px;">
         
         <!-- Columna izquierda: Gráfico -->
-        <div style="background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+        <div style="background: white; padding: clamp(14px, 4vw, 25px); border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
           <h3 style="color: #1f2937; margin-bottom: 20px; font-size: 1.3em; text-align: center;">Nivel de intensidad</h3>
           
           <!-- Gráfico simplificado -->
@@ -1681,7 +1681,7 @@ function displayResults(scores) {
         </div>
 
         <!-- Columna derecha: Características clave -->
-        <div style="background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+        <div style="background: white; padding: clamp(14px, 4vw, 25px); border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
           <h3 style="color: #1f2937; margin-bottom: 20px; font-size: 1.3em;">Características clave</h3>
           <ul style="list-style: none; padding: 0; margin: 0;">
             ${keyCharacteristics[dominantTypeName].map(char => `
@@ -1695,9 +1695,9 @@ function displayResults(scores) {
       </div>
 
       <!-- Sliders de comportamiento -->
-      <div style="background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+      <div style="background: white; padding: clamp(14px, 4vw, 25px); border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
         <h3 style="color: #1f2937; margin-bottom: 25px; font-size: 1.3em; text-align: center;">Perfil de comportamiento</h3>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 20px;">
           ${behaviorSliders[dominantTypeName].map(slider => `
             <div style="margin-bottom: 20px;">
               <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.9em; color: #6b7280;">
