@@ -1799,3 +1799,9 @@ body::before {
   color: #ffffff;
 }
 
+
+/* Fix móvil: resultados ocupaban solo ~231px de 375px */
+@media (max-width: 768px) {
+  #eneagram-test-wrapper .container { padding: 12px; margin: 10px 6px; }
+  #eneagram-test-wrapper #results-container { padding: 16px 12px !important; }
+}
