@@ -2833,19 +2833,27 @@ function construirPerfilDisc(scores) {
 // - Como propiedad "perfil_disc" del formulario.
 // - En un campo del formulario cuya etiqueta contenga "DISC" (si existe en Bitrix24);
 //   ese campo se llena solo y se oculta para el usuario.
+// Oculta el campo "Perfil DISC" del formulario (la persona no lo ve).
+// Se ejecuta desde que carga la página y se repite por si Bitrix24 vuelve a dibujar el formulario.
+function ocultarCampoDisc() {
+  document.querySelectorAll("#bitrix24-form-container .b24-form-field").forEach((el) => {
+    if (el.classList.contains("b24-disc-hidden")) return;
+    const label = el.querySelector(".b24-form-control-label, label");
+    const input = el.querySelector("input, textarea");
+    const texto = (label ? label.textContent : "") + " " + (input ? input.placeholder || "" : "");
+    if (/disc/i.test(texto)) el.classList.add("b24-disc-hidden");
+  });
+}
+setInterval(ocultarCampoDisc, 300);
+
 function cargarPerfilEnBitrix(perfil) {
   const form = getBitrixForm();
   if (!form) return false;
   try { form.setProperty("perfil_disc", perfil); } catch (e) {}
   try {
     const campo = form.getFields().find((f) => /disc/i.test(f.label || ""));
-    if (campo) {
-      form.setValues({ [campo.name]: perfil });
-      document.querySelectorAll("#bitrix24-form-container .b24-form-field").forEach((el) => {
-        const label = el.querySelector(".b24-form-control-label, label");
-        if (label && /disc/i.test(label.textContent)) el.classList.add("b24-disc-hidden");
-      });
-    }
+    if (campo) form.setValues({ [campo.name]: perfil });
+    ocultarCampoDisc();
   } catch (e) {
     console.warn("[BITRIX24] No se pudo cargar el perfil DISC en el formulario:", e);
   }
