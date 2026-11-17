@@ -2841,7 +2841,7 @@ function ocultarCampoDisc() {
     const label = el.querySelector(".b24-form-control-label, label");
     const input = el.querySelector("input, textarea");
     const texto = (label ? label.textContent : "") + " " + (input ? input.placeholder || "" : "");
-    if (/disc/i.test(texto)) el.classList.add("b24-disc-hidden");
+    if (/disc|comentario/i.test(texto)) el.classList.add("b24-disc-hidden");
   });
 }
 setInterval(ocultarCampoDisc, 300);
@@ -2851,7 +2851,7 @@ function cargarPerfilEnBitrix(perfil) {
   if (!form) return false;
   try { form.setProperty("perfil_disc", perfil); } catch (e) {}
   try {
-    const campo = form.getFields().find((f) => /disc/i.test(f.label || ""));
+    const campo = form.getFields().find((f) => /disc|comentario/i.test(f.label || "") || /COMMENTS/i.test(f.name || ""));
     if (campo) form.setValues({ [campo.name]: perfil });
     ocultarCampoDisc();
   } catch (e) {
