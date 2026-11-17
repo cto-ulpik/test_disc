@@ -1834,7 +1834,10 @@ function hideResultsLoader() {
 if (restartTestBtn) {
   restartTestBtn.addEventListener("click", () => {
     if (resultsContainer) resultsContainer.style.display = "none";
+    const gate = document.getElementById("lead-gate-container");
+    if (gate) gate.style.display = "none";
     if (startTestContainer) startTestContainer.style.display = "block";
+    window.scrollTo({ top: 0, behavior: "smooth" });
 
     if (typeDescriptions && typeDescriptions.length > 0) {
       typeDescriptions.forEach((desc) => (desc.style.display = "none"));
@@ -2795,7 +2798,156 @@ window.cargarBitrix24Visible = cargarBitrix24Visible;
 window.autoFillBitrix24Email = autoFillBitrix24Email;
 window.startBitrix24EmailAutofill = startBitrix24EmailAutofill;
 
-// Manejar click del botón submit - ahora como div normal
+// =====================================================================
+// FLUJO FINAL DEL TEST
+// 1) El usuario termina las preguntas y da clic en "Calcular Resultados".
+// 2) Se muestra el formulario de Bitrix24 (lead al CRM) como paso previo.
+// 3) Cuando Bitrix24 confirma el envío, se guardan los datos en Firebase
+//    (respaldo) y se muestran los resultados con los botones finales.
+// =====================================================================
+const leadGateContainer = document.getElementById("lead-gate-container");
+let leadData = null;          // Datos del lead ya enviados en esta sesión
+let pendingScores = null;     // Puntajes esperando a que se envíe el formulario
+let bitrixWatchInterval = null;
+
+const DISC_LABELS = ["Dominancia", "Influencia", "Estabilidad", "Cumplimiento"];
+
+function getBitrixForm() {
+  try {
+    if (window.b24form && window.b24form.App) {
+      const forms = window.b24form.App.list();
+      return forms && forms.length ? forms[0] : null;
+    }
+  } catch (e) {
+    console.warn("[BITRIX24] No se pudo obtener el formulario:", e);
+  }
+  return null;
+}
+
+function construirPerfilDisc(scores) {
+  const idx = scores.indexOf(Math.max(...scores));
+  return `${DISC_LABELS[idx]} (D: ${Math.round(scores[0])}, I: ${Math.round(scores[1])}, S: ${Math.round(scores[2])}, C: ${Math.round(scores[3])})`;
+}
+
+// Envía el perfil DISC junto con el lead:
+// - Como propiedad "perfil_disc" del formulario.
+// - En un campo del formulario cuya etiqueta contenga "DISC" (si existe en Bitrix24);
+//   ese campo se llena solo y se oculta para el usuario.
+function cargarPerfilEnBitrix(perfil) {
+  const form = getBitrixForm();
+  if (!form) return false;
+  try { form.setProperty("perfil_disc", perfil); } catch (e) {}
+  try {
+    const campo = form.getFields().find((f) => /disc/i.test(f.label || ""));
+    if (campo) {
+      form.setValues({ [campo.name]: perfil });
+      document.querySelectorAll("#bitrix24-form-container .b24-form-field").forEach((el) => {
+        const label = el.querySelector(".b24-form-control-label, label");
+        if (label && /disc/i.test(label.textContent)) el.classList.add("b24-disc-hidden");
+      });
+    }
+  } catch (e) {
+    console.warn("[BITRIX24] No se pudo cargar el perfil DISC en el formulario:", e);
+  }
+  return true;
+}
+
+function primerValor(v) {
+  if (Array.isArray(v)) v = v[0];
+  if (v && typeof v === "object") v = v.value || v.label || "";
+  return (v || "").toString().trim();
+}
+
+function mostrarFormularioLead(scores) {
+  pendingScores = scores;
+  quizForm.style.display = "none";
+  paginationControlsDiv.style.display = "none";
+  submitBtn.style.display = "none";
+  hideAlert();
+  if (leadGateContainer) leadGateContainer.style.display = "block";
+  setTimeout(() => {
+    leadGateContainer.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, 100);
+
+  const perfil = construirPerfilDisc(scores);
+  if (bitrixWatchInterval) clearInterval(bitrixWatchInterval);
+  let perfilCargado = false;
+  bitrixWatchInterval = setInterval(() => {
+    const form = getBitrixForm();
+    if (!form) return;
+    if (!perfilCargado) perfilCargado = cargarPerfilEnBitrix(perfil);
+    // Bitrix24 marca sent=true y error=false cuando el lead se guardó en el CRM
+    if (form.sent && !form.error && !form.loading) {
+      clearInterval(bitrixWatchInterval);
+      bitrixWatchInterval = null;
+      let valores = {};
+      try { valores = form.values(); } catch (e) {}
+      leadData = {
+        nombre: primerValor(valores.CONTACT_NAME),
+        email: primerValor(valores.CONTACT_EMAIL),
+        telefono: primerValor(valores.CONTACT_PHONE),
+      };
+      console.log("✅ [BITRIX24] Lead enviado:", leadData);
+      setTimeout(() => finalizarTest(pendingScores), 800);
+    }
+  }, 500);
+}
+
+async function guardarEnFirebase(scores) {
+  const maxScore = Math.max(...scores);
+  const dominantTypeIndex = scores.indexOf(maxScore);
+  const resultado = {
+    tipo: (dominantTypeIndex + 1).toString(),
+    puntaje: maxScore,
+    descripcion: obtenerDescripcionTipo(dominantTypeIndex + 1),
+    puntuaciones: {
+      D: Math.round(scores[0]),
+      I: Math.round(scores[1]),
+      S: Math.round(scores[2]),
+      C: Math.round(scores[3]),
+    },
+  };
+  const respuestasObj = {};
+  userResponses.forEach((resp, idx) => {
+    if (resp !== null && resp.most !== null && resp.least !== null) {
+      respuestasObj[`p${idx + 1}`] = {
+        most: resp.most,
+        least: resp.least,
+        mostDimension: resp.mostDimension,
+        leastDimension: resp.leastDimension,
+      };
+    }
+  });
+  const email = (leadData && leadData.email) || "";
+  try {
+    await crearDocumentoFirestore(email);
+    if (firebaseAvailable && firestoreDocRef && leadData) {
+      await firestoreDocRef.update({
+        nombre: leadData.nombre || "",
+        num_whats: leadData.telefono || "",
+        origen_lead: "bitrix24",
+      });
+    }
+    await actualizarRespuestasFirestore();
+    await actualizarResultadoFirestore(resultado);
+    console.log("Resultado guardado en Firebase");
+  } catch (error) {
+    console.error("Error guardando en Firebase, usando respaldo local:", error);
+    guardarResultadoLocal(email, resultado, respuestasObj);
+  }
+}
+
+async function finalizarTest(scores) {
+  if (!scores) return;
+  showResultsLoader();
+  if (leadGateContainer) leadGateContainer.style.display = "none";
+  await guardarEnFirebase(scores);
+  setTimeout(() => {
+    hideResultsLoader();
+    displayResults(scores);
+  }, 1200);
+}
+
 if (submitBtn) {
   submitBtn.addEventListener("click", async (event) => {
     event.preventDefault();
@@ -2803,104 +2955,14 @@ if (submitBtn) {
       showAlert("Aún faltan preguntas por responder. Por favor, completa todas.");
       return;
     }
-    
     const scores = calculateScores();
-    if (scores) {
-      // Solicitar email y permisos al usuario antes de mostrar resultados
-      const userData = await mostrarModalEmail();
-      
-      if (!userData) {
-        // Usuario canceló, no hacer nada (quedarse en el test)
-        return;
-      }
-      
-      if (userData === 'complete') {
-        // Usuario quiere completar preguntas, no hacer nada (quedarse en el test)
-        return;
-      }
-      
-      // Extraer datos del usuario
-      const { email, acceptsPromotions } = userData;
-      
-      // Modelo resultado: { tipo, puntaje, descripcion }
-      const maxScore = Math.max(...scores);
-      const dominantTypeIndex = scores.indexOf(maxScore);
-      const resultado = {
-        tipo: (dominantTypeIndex + 1).toString(),
-        puntaje: maxScore,
-        descripcion: obtenerDescripcionTipo(dominantTypeIndex + 1),
-        puntuaciones: {
-          D: Math.round(scores[0]),
-          I: Math.round(scores[1]), 
-          S: Math.round(scores[2]),
-          C: Math.round(scores[3])
-        }
-      };
-      
-      // Preparar respuestas para guardado
-      const respuestasObj = {};
-      userResponses.forEach((resp, idx) => {
-        if (resp !== null && resp.most !== null && resp.least !== null) {
-          respuestasObj[`p${idx + 1}`] = {
-            most: resp.most,
-            least: resp.least,
-            mostDimension: resp.mostDimension,
-            leastDimension: resp.leastDimension
-          };
-        }
-      });
-      
-      // Mostrar loader mientras se procesan los resultados
-      showResultsLoader();
-      
-      // Crear documento en Firestore con el email proporcionado
-      try {
-        await crearDocumentoFirestore(email);
-        await actualizarRespuestasFirestore();
-        await actualizarResultadoFirestore(resultado);
-        console.log("Resultado guardado en Firebase");
-      } catch (error) {
-        console.error("Error guardando en Firebase, usando respaldo local:", error);
-        guardarResultadoLocal(email, resultado, respuestasObj);
-      }
-      
-      // Mostrar resultados después de un breve delay
-      setTimeout(() => {
-        hideResultsLoader();
-        displayResults(scores);
-        
-        // NOTA: El formulario de Bitrix24 se carga automáticamente desde el HTML
-        // cuando se muestra el contenedor de resultados (#results-container).
-        // No es necesario cargarlo manualmente desde JavaScript.
-        // El script está en: index.html, líneas 135-143
-        console.log('✅ Formulario de Bitrix24 disponible en la página de resultados');
-        console.log('📋 El usuario puede llenarlo opcionalmente para recibir más información');
-        
-        // Iniciar auto-relleno del email en el formulario de Bitrix24
-        setTimeout(() => {
-          console.log('🔄 Iniciando auto-relleno de email en formulario de Bitrix24...');
-          startBitrix24EmailAutofill();
-        }, 2000); // Esperar 2 segundos para que el formulario se cargue
-        
-        // Notificación amigable informando sobre el formulario
-        if (typeof Toastify !== 'undefined') {
-          setTimeout(() => {
-            Toastify({
-              text: "💡 Desplázate hacia abajo para llenar el formulario de contacto si deseas más información",
-              duration: 6000,
-              gravity: "bottom",
-              position: "center",
-              backgroundColor: "linear-gradient(to right, #1982C4, #FF595E)",
-              style: {
-                fontSize: "15px",
-                fontWeight: "600",
-                borderRadius: "12px",
-                boxShadow: "0 4px 15px rgba(25, 130, 196, 0.3)"
-              }
-            }).showToast();
-          }, 1000);
-        }
-      }, 2000);
+    if (!scores) return;
+
+    if (leadData) {
+      // Ya dejó sus datos en esta sesión (está repitiendo el test): mostrar resultados directo
+      finalizarTest(scores);
+    } else {
+      mostrarFormularioLead(scores);
     }
   });
 } else {

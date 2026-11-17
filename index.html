@@ -118,14 +118,12 @@
 
           <div id="submit-btn" class="submit-button">Calcular Resultados</div>
         </div>
-        <div id="results-container" style="display: none">
-          <div id="results-text"></div>
-          
-          <!-- Sección de Contacto con Bitrix24 -->
+        <!-- Paso previo a resultados: formulario de Bitrix24 (guarda el lead en el CRM) -->
+        <div id="lead-gate-container" style="display: none">
           <div class="bitrix-contact-section">
             <div class="bitrix-header">
-              <h3 class="bitrix-title">📞 Si deseas recibir más información o asesoría</h3>
-              <p class="bitrix-subtitle">Completa el formulario y nos pondremos en contacto contigo</p>
+              <h3 class="bitrix-title">🎉 ¡Terminaste el test!</h3>
+              <p class="bitrix-subtitle">Completa tus datos para ver tus resultados</p>
             </div>
             
             <!-- Contenedor del formulario de Bitrix24 con estilos personalizados -->
@@ -151,9 +149,16 @@
               </p>
             </div>
           </div>
-          
-          <div class="restart-container">
-            <button id="restart-test-btn">Reiniciar Test</button>
+        </div>
+
+        <div id="results-container" style="display: none">
+          <div id="results-text"></div>
+
+          <div class="results-actions">
+            <a id="schedule-call-btn" class="schedule-call-button"
+               href="https://calendar.app.google/WFSnHWRW9Dbef2DR6"
+               target="_blank" rel="noopener">📅 Agendar una llamada aquí</a>
+            <button id="restart-test-btn">🔄 Realizar test de nuevo</button>
           </div>
         </div>
 

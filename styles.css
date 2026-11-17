@@ -1042,6 +1042,58 @@ body::before {
   margin: 30px 0;
 }
 
+/* Acciones al final de los resultados */
+#eneagram-test-wrapper .results-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 14px;
+  margin: 30px 0;
+}
+
+#eneagram-test-wrapper .schedule-call-button {
+  display: inline-block;
+  padding: 16px 32px;
+  font-size: 1.1em;
+  font-weight: 700;
+  color: #fff;
+  text-decoration: none;
+  background: linear-gradient(135deg, #22C55E 0%, #16a34a 100%);
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(34, 197, 94, 0.35);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  text-align: center;
+  max-width: 100%;
+}
+
+#eneagram-test-wrapper .schedule-call-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(34, 197, 94, 0.45);
+}
+
+#eneagram-test-wrapper .results-actions #restart-test-btn {
+  margin: 0;
+  padding: 16px 28px;
+  font-size: 1.1em;
+  font-weight: 700;
+}
+
+/* Campo del perfil DISC en Bitrix24: se llena solo, no se muestra */
+.b24-disc-hidden {
+  display: none !important;
+}
+
+@media (max-width: 480px) {
+  #eneagram-test-wrapper .results-actions {
+    flex-direction: column;
+  }
+  #eneagram-test-wrapper .schedule-call-button,
+  #eneagram-test-wrapper .results-actions #restart-test-btn {
+    width: 100%;
+  }
+}
+
 /* Footer */
 #eneagram-test-wrapper footer {
   margin-top: 40px;
